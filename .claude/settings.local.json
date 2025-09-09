@@ -8,7 +8,16 @@
       "WebSearch",
       "WebFetch(domain:pub.dev)",
       "Read(//Users/dfsteve/.pub-cache/**)",
-      "Bash(flutter:*)"
+      "Bash(flutter:*)",
+      "Bash(pnpm:*)",
+      "Bash(/Applications/DevEco-Studio.app/Contents/tools/node/bin/npx pnpm install)",
+      "Bash(/Applications/DevEco-Studio.app/Contents/tools/node/bin/node:*)",
+      "Bash(ohpm install:*)",
+      "Read(//private/tmp/test_app/ohos/**)",
+      "Read(//Library/Afolder/FlutterProject/flutter_flutter/bin/cache/artifacts/**)",
+      "Read(//Users/dfsteve/HarmonyOS_SDK/**)",
+      "Bash(DEVECO_SDK_HOME=/Users/dfsteve/HarmonyOS_SDK /Applications/DevEco-Studio.app/Contents/tools/node/bin/node /Applications/DevEco-Studio.app/Contents/tools/hvigor/bin/hvigorw.js:*)",
+      "Bash(ohpm:*)"
     ],
     "deny": [],
     "ask": []
