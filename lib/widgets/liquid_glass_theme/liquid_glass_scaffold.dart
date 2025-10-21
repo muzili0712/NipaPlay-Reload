@@ -138,71 +138,75 @@ class _LiquidGlassScaffoldState extends State<LiquidGlassScaffold> {
         Scaffold(
           backgroundColor: Colors.transparent,
           extendBody: true,
-          body: SafeArea(
-            bottom: false,
-            child: Column(
-              children: [
-                // 苹果风格大标题导航栏
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.only(
-                    left: 20,
-                    right: 20,
-                    top: 12,
-                    bottom: 12,
-                  ),
-                  child: Text(
-                    bottomBarTabs[
-                            _currentIndex.clamp(0, bottomBarTabs.length - 1)]
-                        .label,
-                    style: const TextStyle(
-                      fontSize: 34,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                      letterSpacing: 0.36,
-                      height: 1.2,
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: TabControllerScope(
-                    controller: controller,
-                    enabled: true,
-                    child: SwitchableView(
-                      controller: controller,
-                      enableAnimation: enableAnimation,
-                      currentIndex: controller.index,
-                      physics: enableAnimation
-                          ? const PageScrollPhysics()
-                          : const NeverScrollableScrollPhysics(),
-                      onPageChanged: _handlePageChanged,
-                      children: widget.pages
-                          .map((page) => RepaintBoundary(child: page))
-                          .toList(),
-                    ),
-                  ),
-                ),
-                if (widget.showNavigation)
-                  SafeArea(
-                    top: false,
-                    minimum: EdgeInsets.only(
-                      left: _isCupertinoPlatform ? 0 : 16,
-                      right: _isCupertinoPlatform ? 0 : 16,
-                      bottom: _isCupertinoPlatform ? 12 : 16,
-                    ),
-                    child: CupertinoTheme(
-                      data: cupertinoTheme,
-                      child: LiquidGlassBottomBar(
-                        tabs: bottomBarTabs,
-                        selectedIndex:
-                            _currentIndex.clamp(0, bottomBarTabs.length - 1),
-                        onTabSelected: _onBottomTabSelected,
-                        showIndicator: true,
+          body: Stack(
+            children: [
+              // 主内容区域 - 包含标题和页面内容
+              SafeArea(
+                bottom: false,
+                child: Column(
+                  children: [
+                    // 苹果风格大标题导航栏
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.only(
+                        left: 20,
+                        right: 20,
+                        top: 40,
+                        bottom: 24,
+                      ),
+                      child: Text(
+                        bottomBarTabs[_currentIndex.clamp(
+                                0, bottomBarTabs.length - 1)]
+                            .label,
+                        style: const TextStyle(
+                          fontSize: 36,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          letterSpacing: 0.4,
+                          height: 1.2,
+                        ),
                       ),
                     ),
+                    Expanded(
+                      child: TabControllerScope(
+                        controller: controller,
+                        enabled: true,
+                        child: SwitchableView(
+                          controller: controller,
+                          enableAnimation: enableAnimation,
+                          currentIndex: controller.index,
+                          physics: enableAnimation
+                              ? const PageScrollPhysics()
+                              : const NeverScrollableScrollPhysics(),
+                          onPageChanged: _handlePageChanged,
+                          children: widget.pages
+                              .map((page) => RepaintBoundary(child: page))
+                              .toList(),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // 底部导航栏 - 更贴近底部
+              if (widget.showNavigation)
+                Positioned(
+                  left: 12,
+                  right: 12,
+                  bottom: 0, // 减少边距让导航栏更靠下
+                  child: CupertinoTheme(
+                    data: cupertinoTheme,
+                    child: LiquidGlassBottomBar(
+                      tabs: bottomBarTabs,
+                      selectedIndex:
+                          _currentIndex.clamp(0, bottomBarTabs.length - 1),
+                      onTabSelected: _onBottomTabSelected,
+                      showIndicator: true,
+                      barHeight: 64, // 增加高度让导航栏更圆润
+                    ),
                   ),
-              ],
-            ),
+                ),
+            ],
           ),
         ),
       ],
@@ -254,13 +258,6 @@ List<LiquidGlassBottomBarTab> createLiquidGlassTabs() {
   );
 
   return items;
-}
-
-bool get _isCupertinoPlatform {
-  if (_isWeb) {
-    return false;
-  }
-  return defaultTargetPlatform == TargetPlatform.iOS;
 }
 
 bool get _isWeb => kIsWeb;

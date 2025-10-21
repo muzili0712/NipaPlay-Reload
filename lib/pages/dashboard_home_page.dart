@@ -59,15 +59,14 @@ class _DashboardHomePageState extends State<DashboardHomePage>
   // Provider 通知后的轻量防抖（覆盖库选择等状态变化）
   Timer? _jfDebounceTimer;
   Timer? _emDebounceTimer;
-  
-  
+
   @override
   bool get wantKeepAlive => true;
 
   // 推荐内容数据
   List<RecommendedItem> _recommendedItems = [];
   bool _isLoadingRecommended = false;
-  
+
   // 待处理的刷新请求
   bool _pendingRefreshAfterLoad = false;
   String _pendingRefreshReason = '';
@@ -75,7 +74,7 @@ class _DashboardHomePageState extends State<DashboardHomePage>
   // 播放器状态追踪，用于检测退出播放器时触发刷新
   bool _wasPlayerActive = false;
   Timer? _playerStateCheckTimer;
-  
+
   // 播放器状态缓存，减少频繁的Provider查询
   bool _cachedPlayerActiveState = false;
   DateTime _lastPlayerStateCheck = DateTime.now();
@@ -85,7 +84,7 @@ class _DashboardHomePageState extends State<DashboardHomePage>
   // 最近添加数据 - 按媒体库分类
   Map<String, List<JellyfinMediaItem>> _recentJellyfinItemsByLibrary = {};
   Map<String, List<EmbyMediaItem>> _recentEmbyItemsByLibrary = {};
-  
+
   // 本地媒体库数据 - 使用番组信息而不是观看历史
   List<LocalAnimeItem> _localAnimeItems = [];
   // 本地媒体库图片持久化缓存（与 MediaLibraryPage 复用同一前缀）
@@ -98,12 +97,12 @@ class _DashboardHomePageState extends State<DashboardHomePage>
   final ScrollController _continueWatchingScrollController = ScrollController();
   final ScrollController _recentJellyfinScrollController = ScrollController();
   final ScrollController _recentEmbyScrollController = ScrollController();
-  
+
   // 动态媒体库的ScrollController映射
   final Map<String, ScrollController> _jellyfinLibraryScrollControllers = {};
   final Map<String, ScrollController> _embyLibraryScrollControllers = {};
   ScrollController? _localLibraryScrollController;
-  
+
   // 自动切换相关
   Timer? _autoSwitchTimer;
   bool _isAutoSwitching = true;
@@ -128,23 +127,27 @@ class _DashboardHomePageState extends State<DashboardHomePage>
   void initState() {
     super.initState();
     _heroBannerIndexNotifier = ValueNotifier(0);
-    
+
     // 🔥 修复Flutter状态错误：将数据加载移到addPostFrameCallback中
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _setupProviderListeners();
       _startAutoSwitch();
-      
+
       // 🔥 在build完成后安全地加载数据，避免setState during build错误
       if (mounted) {
         _loadData();
       }
-      
+
       // 延迟检查WatchHistoryProvider状态，如果已经加载完成但数据为空则重新加载
       Future.delayed(const Duration(milliseconds: 500), () {
         if (mounted) {
-          final watchHistoryProvider = Provider.of<WatchHistoryProvider>(context, listen: false);
-          if (watchHistoryProvider.isLoaded && _localAnimeItems.isEmpty && _recommendedItems.length <= 7) {
-            debugPrint('DashboardHomePage: 延迟检查发现WatchHistoryProvider已加载但数据为空，重新加载数据');
+          final watchHistoryProvider =
+              Provider.of<WatchHistoryProvider>(context, listen: false);
+          if (watchHistoryProvider.isLoaded &&
+              _localAnimeItems.isEmpty &&
+              _recommendedItems.length <= 7) {
+            debugPrint(
+                'DashboardHomePage: 延迟检查发现WatchHistoryProvider已加载但数据为空，重新加载数据');
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (mounted) {
                 _loadData();
@@ -155,7 +158,7 @@ class _DashboardHomePageState extends State<DashboardHomePage>
       });
     });
   }
-  
+
   // 获取或创建Jellyfin媒体库的ScrollController
   ScrollController _getJellyfinLibraryScrollController(String libraryName) {
     if (!_jellyfinLibraryScrollControllers.containsKey(libraryName)) {
@@ -163,7 +166,7 @@ class _DashboardHomePageState extends State<DashboardHomePage>
     }
     return _jellyfinLibraryScrollControllers[libraryName]!;
   }
-  
+
   // 获取或创建Emby媒体库的ScrollController
   ScrollController _getEmbyLibraryScrollController(String libraryName) {
     if (!_embyLibraryScrollControllers.containsKey(libraryName)) {
@@ -171,13 +174,13 @@ class _DashboardHomePageState extends State<DashboardHomePage>
     }
     return _embyLibraryScrollControllers[libraryName]!;
   }
-  
+
   // 获取或创建本地媒体库的ScrollController
   ScrollController _getLocalLibraryScrollController() {
     _localLibraryScrollController ??= ScrollController();
     return _localLibraryScrollController!;
   }
-  
+
   void _startAutoSwitch() {
     _autoSwitchTimer?.cancel();
     _autoSwitchTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
@@ -194,21 +197,22 @@ class _DashboardHomePageState extends State<DashboardHomePage>
       }
     });
   }
-  
+
   void _stopAutoSwitch() {
     _autoSwitchTimer?.cancel();
     _isAutoSwitching = false;
   }
-  
+
   void _resumeAutoSwitch() {
     _isAutoSwitching = true;
     _startAutoSwitch();
   }
-  
+
   void _setupProviderListeners() {
     // 订阅 Provider 级 ready；ready 之前不监听 Provider 的即时变化
     try {
-      _jellyfinProviderRef = Provider.of<JellyfinProvider>(context, listen: false);
+      _jellyfinProviderRef =
+          Provider.of<JellyfinProvider>(context, listen: false);
       _jellyfinProviderReadyListener = () {
         if (!mounted) return;
         debugPrint('DashboardHomePage: 收到 Jellyfin Provider ready 信号');
@@ -250,27 +254,29 @@ class _DashboardHomePageState extends State<DashboardHomePage>
     } catch (e) {
       debugPrint('DashboardHomePage: 安装 Emby Provider ready 监听失败: $e');
     }
-    
+
     // 监听WatchHistoryProvider的加载状态变化
     try {
-  _watchHistoryProviderRef = Provider.of<WatchHistoryProvider>(context, listen: false);
-  _watchHistoryProviderRef!.addListener(_onWatchHistoryStateChanged);
+      _watchHistoryProviderRef =
+          Provider.of<WatchHistoryProvider>(context, listen: false);
+      _watchHistoryProviderRef!.addListener(_onWatchHistoryStateChanged);
     } catch (e) {
       debugPrint('DashboardHomePage: 添加WatchHistoryProvider监听器失败: $e');
     }
-    
+
     // 监听ScanService的扫描完成状态变化
     try {
-  _scanServiceRef = Provider.of<ScanService>(context, listen: false);
-  _scanServiceRef!.addListener(_onScanServiceStateChanged);
+      _scanServiceRef = Provider.of<ScanService>(context, listen: false);
+      _scanServiceRef!.addListener(_onScanServiceStateChanged);
     } catch (e) {
       debugPrint('DashboardHomePage: 添加ScanService监听器失败: $e');
     }
-    
+
     // 监听VideoPlayerState的状态变化，用于检测播放器状态
     try {
-  _videoPlayerStateRef = Provider.of<VideoPlayerState>(context, listen: false);
-  _videoPlayerStateRef!.addListener(_onVideoPlayerStateChanged);
+      _videoPlayerStateRef =
+          Provider.of<VideoPlayerState>(context, listen: false);
+      _videoPlayerStateRef!.addListener(_onVideoPlayerStateChanged);
     } catch (e) {
       debugPrint('DashboardHomePage: 添加VideoPlayerState监听器失败: $e');
     }
@@ -299,6 +305,7 @@ class _DashboardHomePageState extends State<DashboardHomePage>
         _activateJellyfinLiveListening();
       }
     }
+
     checkAndActivate();
   }
 
@@ -334,6 +341,7 @@ class _DashboardHomePageState extends State<DashboardHomePage>
         _activateEmbyLiveListening();
       }
     }
+
     checkAndActivate();
   }
 
@@ -354,8 +362,11 @@ class _DashboardHomePageState extends State<DashboardHomePage>
     // 合并短时间内的重复触发：注意，后端 ready 不参与合并，必须执行；仅合并后续触发
     final now = DateTime.now();
     final bool isBackendReady = reason.contains('后端 ready');
-    if (!isBackendReady && _lastLoadTime != null && now.difference(_lastLoadTime!).inMilliseconds < 500) {
-      debugPrint('DashboardHomePage: 距上次加载过近(${now.difference(_lastLoadTime!).inMilliseconds}ms)，跳过这次($reason)');
+    if (!isBackendReady &&
+        _lastLoadTime != null &&
+        now.difference(_lastLoadTime!).inMilliseconds < 500) {
+      debugPrint(
+          'DashboardHomePage: 距上次加载过近(${now.difference(_lastLoadTime!).inMilliseconds}ms)，跳过这次($reason)');
       return;
     }
     if (_isLoadingRecommended) {
@@ -365,34 +376,35 @@ class _DashboardHomePageState extends State<DashboardHomePage>
     }
     _loadData();
   }
-  
+
   // 检查播放器是否处于活跃状态（播放中、暂停或准备好播放）
   bool _isVideoPlayerActive() {
     try {
       // 使用缓存机制，避免频繁的Provider查询
       final now = DateTime.now();
       const cacheValidDuration = Duration(milliseconds: 100); // 100ms缓存
-      
+
       if (now.difference(_lastPlayerStateCheck) < cacheValidDuration) {
         return _cachedPlayerActiveState;
       }
-      
-      final videoPlayerState = Provider.of<VideoPlayerState>(context, listen: false);
-      final isActive = videoPlayerState.status == PlayerStatus.playing || 
-             videoPlayerState.status == PlayerStatus.paused ||
-             videoPlayerState.hasVideo ||
-             videoPlayerState.currentVideoPath != null;
-      
+
+      final videoPlayerState =
+          Provider.of<VideoPlayerState>(context, listen: false);
+      final isActive = videoPlayerState.status == PlayerStatus.playing ||
+          videoPlayerState.status == PlayerStatus.paused ||
+          videoPlayerState.hasVideo ||
+          videoPlayerState.currentVideoPath != null;
+
       // 更新缓存
       _cachedPlayerActiveState = isActive;
       _lastPlayerStateCheck = now;
-      
+
       // 只在状态发生变化时打印调试信息，减少日志噪音
       if (isActive != _wasPlayerActive) {
         debugPrint('DashboardHomePage: 播放器活跃状态变化 - $isActive '
-                   '(status: ${videoPlayerState.status}, hasVideo: ${videoPlayerState.hasVideo})');
+            '(status: ${videoPlayerState.status}, hasVideo: ${videoPlayerState.hasVideo})');
       }
-      
+
       return isActive;
     } catch (e) {
       debugPrint('DashboardHomePage: _isVideoPlayerActive() 出错: $e');
@@ -403,26 +415,25 @@ class _DashboardHomePageState extends State<DashboardHomePage>
   // 判断是否应该延迟图片加载（避免与HEAD验证竞争）
   bool _shouldDelayImageLoad() {
     // 检查推荐内容中是否包含本地媒体
-    final hasLocalContent = _recommendedItems.any((item) => 
-      item.source == RecommendedItemSource.local
-    );
-    
+    final hasLocalContent = _recommendedItems
+        .any((item) => item.source == RecommendedItemSource.local);
+
     // 如果有本地媒体，就立即加载以保持最佳性能；没有本地媒体才延迟避免与HEAD验证竞争
     return !hasLocalContent;
   }
 
   void _onVideoPlayerStateChanged() {
     if (!mounted) return;
-    
+
     final isCurrentlyActive = _isVideoPlayerActive();
-    
+
     // 检测播放器从活跃状态变为非活跃状态（退出播放器）
     if (_wasPlayerActive && !isCurrentlyActive) {
       debugPrint('DashboardHomePage: 检测到播放器状态变为非活跃，启动延迟检查');
-      
+
       // 取消之前的检查Timer
       _playerStateCheckTimer?.cancel();
-      
+
       // 延迟检查，避免快速状态切换时的误触发
       _playerStateCheckTimer = Timer(const Duration(milliseconds: 1500), () {
         if (mounted && !_isVideoPlayerActive()) {
@@ -433,34 +444,36 @@ class _DashboardHomePageState extends State<DashboardHomePage>
         }
       });
     }
-    
+
     // 如果播放器重新变为活跃状态，取消待处理的更新
     if (!_wasPlayerActive && isCurrentlyActive) {
       debugPrint('DashboardHomePage: 播放器重新激活，取消待处理的更新检查');
       _playerStateCheckTimer?.cancel();
     }
-    
+
     // 更新播放器活跃状态记录
     _wasPlayerActive = isCurrentlyActive;
   }
-  
+
   void _onJellyfinStateChanged() {
-  if (!_jellyfinLiveListening) return; // ready 前不处理
+    if (!_jellyfinLiveListening) return; // ready 前不处理
     // 检查Widget是否仍然处于活动状态
     if (!mounted) {
       debugPrint('DashboardHomePage: Widget已销毁，跳过Jellyfin状态变化处理');
       return;
     }
-    
+
     // 如果播放器处于活跃状态（播放或暂停），跳过主页更新
     if (_isVideoPlayerActive()) {
       debugPrint('DashboardHomePage: 播放器活跃中，跳过Jellyfin状态变化处理');
       return;
     }
-    
-    final jellyfinProvider = Provider.of<JellyfinProvider>(context, listen: false);
+
+    final jellyfinProvider =
+        Provider.of<JellyfinProvider>(context, listen: false);
     final connected = jellyfinProvider.isConnected;
-    debugPrint('DashboardHomePage: Jellyfin provider 状态变化 - isConnected: $connected, mounted: $mounted');
+    debugPrint(
+        'DashboardHomePage: Jellyfin provider 状态变化 - isConnected: $connected, mounted: $mounted');
 
     // 断开连接时，立即清空“最近添加”并刷新一次UI，避免残留
     if (!connected && mounted) {
@@ -475,8 +488,10 @@ class _DashboardHomePageState extends State<DashboardHomePage>
     if (connected && mounted) {
       // 合并短时间内的重复触发（避免与刚刚的 ready/首刷重叠）
       final now = DateTime.now();
-      if (_lastLoadTime != null && now.difference(_lastLoadTime!).inMilliseconds < 500) {
-        debugPrint('DashboardHomePage: Jellyfin连接完成，但距上次加载过近(${now.difference(_lastLoadTime!).inMilliseconds}ms)，跳过立即刷新');
+      if (_lastLoadTime != null &&
+          now.difference(_lastLoadTime!).inMilliseconds < 500) {
+        debugPrint(
+            'DashboardHomePage: Jellyfin连接完成，但距上次加载过近(${now.difference(_lastLoadTime!).inMilliseconds}ms)，跳过立即刷新');
         return;
       }
       if (_isLoadingRecommended) {
@@ -494,7 +509,7 @@ class _DashboardHomePageState extends State<DashboardHomePage>
       return; // 避免与防抖重复触发
     }
 
-  // 统一处理 provider 状态变化（连接/断开/库选择等）：轻量防抖刷新
+    // 统一处理 provider 状态变化（连接/断开/库选择等）：轻量防抖刷新
     _jfDebounceTimer?.cancel();
     _jfDebounceTimer = Timer(const Duration(milliseconds: 300), () {
       if (!mounted || _isVideoPlayerActive() || _isLoadingRecommended) return;
@@ -502,24 +517,25 @@ class _DashboardHomePageState extends State<DashboardHomePage>
       _loadData();
     });
   }
-  
+
   void _onEmbyStateChanged() {
-  if (!_embyLiveListening) return; // ready 前不处理
+    if (!_embyLiveListening) return; // ready 前不处理
     // 检查Widget是否仍然处于活动状态
     if (!mounted) {
       debugPrint('DashboardHomePage: Widget已销毁，跳过Emby状态变化处理');
       return;
     }
-    
+
     // 如果播放器处于活跃状态（播放或暂停），跳过主页更新
     if (_isVideoPlayerActive()) {
       debugPrint('DashboardHomePage: 播放器活跃中，跳过Emby状态变化处理');
       return;
     }
-    
+
     final embyProvider = Provider.of<EmbyProvider>(context, listen: false);
     final connected = embyProvider.isConnected;
-    debugPrint('DashboardHomePage: Emby provider 状态变化 - isConnected: $connected, mounted: $mounted');
+    debugPrint(
+        'DashboardHomePage: Emby provider 状态变化 - isConnected: $connected, mounted: $mounted');
 
     // 断开连接时，立即清空“最近添加”并刷新一次UI，避免残留
     if (!connected && mounted) {
@@ -534,8 +550,10 @@ class _DashboardHomePageState extends State<DashboardHomePage>
     if (connected && mounted) {
       // 合并短时间内的重复触发（避免与刚刚的 ready/首刷重叠）
       final now = DateTime.now();
-      if (_lastLoadTime != null && now.difference(_lastLoadTime!).inMilliseconds < 500) {
-        debugPrint('DashboardHomePage: Emby连接完成，但距上次加载过近(${now.difference(_lastLoadTime!).inMilliseconds}ms)，跳过立即刷新');
+      if (_lastLoadTime != null &&
+          now.difference(_lastLoadTime!).inMilliseconds < 500) {
+        debugPrint(
+            'DashboardHomePage: Emby连接完成，但距上次加载过近(${now.difference(_lastLoadTime!).inMilliseconds}ms)，跳过立即刷新');
         return;
       }
       if (_isLoadingRecommended) {
@@ -553,7 +571,7 @@ class _DashboardHomePageState extends State<DashboardHomePage>
       return; // 避免与防抖重复触发
     }
 
-  // 统一处理 provider 状态变化（连接/断开/库选择等）：轻量防抖刷新
+    // 统一处理 provider 状态变化（连接/断开/库选择等）：轻量防抖刷新
     _emDebounceTimer?.cancel();
     _emDebounceTimer = Timer(const Duration(milliseconds: 300), () {
       if (!mounted || _isVideoPlayerActive() || _isLoadingRecommended) return;
@@ -561,22 +579,24 @@ class _DashboardHomePageState extends State<DashboardHomePage>
       _loadData();
     });
   }
-  
+
   void _onWatchHistoryStateChanged() {
     // 检查Widget是否仍然处于活动状态
     if (!mounted) {
       return;
     }
-    
+
     // 如果播放器处于活跃状态（播放或暂停），跳过主页更新
     if (_isVideoPlayerActive()) {
       debugPrint('DashboardHomePage: 播放器活跃中，跳过WatchHistory状态变化处理');
       return;
     }
-    
-    final watchHistoryProvider = Provider.of<WatchHistoryProvider>(context, listen: false);
-    debugPrint('DashboardHomePage: WatchHistory加载状态变化 - isLoaded: ${watchHistoryProvider.isLoaded}, mounted: $mounted');
-    
+
+    final watchHistoryProvider =
+        Provider.of<WatchHistoryProvider>(context, listen: false);
+    debugPrint(
+        'DashboardHomePage: WatchHistory加载状态变化 - isLoaded: ${watchHistoryProvider.isLoaded}, mounted: $mounted');
+
     if (watchHistoryProvider.isLoaded && mounted) {
       if (_isLoadingRecommended) {
         // 如果正在加载，记录待处理的刷新请求
@@ -598,109 +618,114 @@ class _DashboardHomePageState extends State<DashboardHomePage>
       }
     }
   }
-  
+
   void _onScanServiceStateChanged() {
     // 检查Widget是否仍然处于活动状态
     if (!mounted) {
       debugPrint('DashboardHomePage: Widget已销毁，跳过ScanService状态变化处理');
       return;
     }
-    
+
     // 如果播放器处于活跃状态（播放或暂停），跳过主页更新
     if (_isVideoPlayerActive()) {
       debugPrint('DashboardHomePage: 播放器活跃中，跳过ScanService状态变化处理');
       return;
     }
-    
+
     final scanService = Provider.of<ScanService>(context, listen: false);
-    debugPrint('DashboardHomePage: ScanService状态变化 - scanJustCompleted: ${scanService.scanJustCompleted}, mounted: $mounted');
-    
+    debugPrint(
+        'DashboardHomePage: ScanService状态变化 - scanJustCompleted: ${scanService.scanJustCompleted}, mounted: $mounted');
+
     if (scanService.scanJustCompleted && mounted) {
       debugPrint('DashboardHomePage: 扫描完成，刷新WatchHistoryProvider和本地媒体库数据');
-      
+
       // 刷新WatchHistoryProvider以获取最新的扫描结果
       try {
-        final watchHistoryProvider = Provider.of<WatchHistoryProvider>(context, listen: false);
+        final watchHistoryProvider =
+            Provider.of<WatchHistoryProvider>(context, listen: false);
         watchHistoryProvider.refresh();
       } catch (e) {
         debugPrint('DashboardHomePage: 刷新WatchHistoryProvider失败: $e');
       }
-      
+
       // 🔥 修复Flutter状态错误：使用addPostFrameCallback确保不在build期间调用
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           _loadData();
         }
       });
-      
+
       // 确认扫描完成事件已处理
       scanService.acknowledgeScanCompleted();
     }
   }
 
-
-
   @override
   void dispose() {
     debugPrint('DashboardHomePage: 开始销毁Widget');
-    
+
     // 清理定时器和ValueNotifier
     _autoSwitchTimer?.cancel();
     _playerStateCheckTimer?.cancel();
     _playerStateCheckTimer = null;
-    
+
     // 重置播放器状态缓存，防止内存泄漏
     _cachedPlayerActiveState = false;
     _wasPlayerActive = false;
-    
+
     _heroBannerIndexNotifier.dispose();
-    
+
     // 移除监听器 - 使用初始化时保存的实例引用，避免在dispose中再次查找context
     try {
       _jfDebounceTimer?.cancel();
       _deactivateJellyfinLiveListening();
       if (_jellyfinProviderReadyListener != null) {
-        try { _jellyfinProviderRef?.removeReadyListener(_jellyfinProviderReadyListener!); } catch (_) {}
+        try {
+          _jellyfinProviderRef
+              ?.removeReadyListener(_jellyfinProviderReadyListener!);
+        } catch (_) {}
         _jellyfinProviderReadyListener = null;
       }
       debugPrint('DashboardHomePage: JellyfinProvider监听器已移除');
     } catch (e) {
       debugPrint('DashboardHomePage: 移除JellyfinProvider监听器失败: $e');
     }
-    
+
     try {
       _emDebounceTimer?.cancel();
       _deactivateEmbyLiveListening();
       if (_embyProviderReadyListener != null) {
-        try { _embyProviderRef?.removeReadyListener(_embyProviderReadyListener!); } catch (_) {}
+        try {
+          _embyProviderRef?.removeReadyListener(_embyProviderReadyListener!);
+        } catch (_) {}
         _embyProviderReadyListener = null;
       }
       debugPrint('DashboardHomePage: EmbyProvider监听器已移除');
     } catch (e) {
       debugPrint('DashboardHomePage: 移除EmbyProvider监听器失败: $e');
     }
-    
+
     try {
       _watchHistoryProviderRef?.removeListener(_onWatchHistoryStateChanged);
       debugPrint('DashboardHomePage: WatchHistoryProvider监听器已移除');
     } catch (e) {
       debugPrint('DashboardHomePage: 移除WatchHistoryProvider监听器失败: $e');
     }
-    
+
     try {
       _scanServiceRef?.removeListener(_onScanServiceStateChanged);
       debugPrint('DashboardHomePage: ScanService监听器已移除');
     } catch (e) {
       debugPrint('DashboardHomePage: 移除ScanService监听器失败: $e');
     }
-    
+
     try {
       _videoPlayerStateRef?.removeListener(_onVideoPlayerStateChanged);
       debugPrint('DashboardHomePage: VideoPlayerState监听器已移除');
     } catch (e) {
       debugPrint('DashboardHomePage: 移除VideoPlayerState监听器失败: $e');
     }
-    
+
     // 销毁ScrollController
     try {
       _heroBannerPageController.dispose();
@@ -708,70 +733,74 @@ class _DashboardHomePageState extends State<DashboardHomePage>
       _continueWatchingScrollController.dispose();
       _recentJellyfinScrollController.dispose();
       _recentEmbyScrollController.dispose();
-      
+
       // 销毁动态创建的ScrollController
       for (final controller in _jellyfinLibraryScrollControllers.values) {
         controller.dispose();
       }
       _jellyfinLibraryScrollControllers.clear();
-      
+
       for (final controller in _embyLibraryScrollControllers.values) {
         controller.dispose();
       }
       _embyLibraryScrollControllers.clear();
-      
+
       _localLibraryScrollController?.dispose();
       _localLibraryScrollController = null;
-      
+
       debugPrint('DashboardHomePage: ScrollController已销毁');
     } catch (e) {
       debugPrint('DashboardHomePage: 销毁ScrollController失败: $e');
     }
-    
+
     debugPrint('DashboardHomePage: Widget销毁完成');
     super.dispose();
   }
 
   Future<void> _loadData() async {
     final stopwatch = Stopwatch()..start();
-    debugPrint('DashboardHomePage: _loadData 被调用 - _isLoadingRecommended: $_isLoadingRecommended, mounted: $mounted');
+    debugPrint(
+        'DashboardHomePage: _loadData 被调用 - _isLoadingRecommended: $_isLoadingRecommended, mounted: $mounted');
     _lastLoadTime = DateTime.now();
-    
+
     // 检查Widget状态
     if (!mounted) {
       debugPrint('DashboardHomePage: Widget已销毁，跳过数据加载');
       return;
     }
-    
+
     // 如果播放器处于活跃状态，跳过数据加载
     if (_isVideoPlayerActive()) {
       debugPrint('DashboardHomePage: 播放器活跃中，跳过数据加载');
       return;
     }
-    
+
     // 如果正在加载，先检查是否需要强制重新加载
     if (_isLoadingRecommended) {
-      debugPrint('DashboardHomePage: 已在加载中，跳过重复调用 - _isLoadingRecommended: $_isLoadingRecommended');
+      debugPrint(
+          'DashboardHomePage: 已在加载中，跳过重复调用 - _isLoadingRecommended: $_isLoadingRecommended');
       return;
     }
-    
+
     // 🔥 修复仪表盘启动问题：确保WatchHistoryProvider已加载
     try {
-      final watchHistoryProvider = Provider.of<WatchHistoryProvider>(context, listen: false);
+      final watchHistoryProvider =
+          Provider.of<WatchHistoryProvider>(context, listen: false);
       if (!watchHistoryProvider.isLoaded && !watchHistoryProvider.isLoading) {
         debugPrint('DashboardHomePage: WatchHistoryProvider未加载，主动触发加载');
         await watchHistoryProvider.loadHistory();
       } else if (watchHistoryProvider.isLoaded) {
-        debugPrint('DashboardHomePage: WatchHistoryProvider已加载完成，历史记录数量: ${watchHistoryProvider.history.length}');
+        debugPrint(
+            'DashboardHomePage: WatchHistoryProvider已加载完成，历史记录数量: ${watchHistoryProvider.history.length}');
       } else {
         debugPrint('DashboardHomePage: WatchHistoryProvider正在加载中...');
       }
     } catch (e) {
       debugPrint('DashboardHomePage: 加载WatchHistoryProvider失败: $e');
     }
-    
+
     debugPrint('DashboardHomePage: 开始加载数据');
-    
+
     // 并行加载推荐内容和最近内容
     try {
       await Future.wait([
@@ -788,9 +817,10 @@ class _DashboardHomePageState extends State<DashboardHomePage>
         debugPrint('DashboardHomePage: 串行加载数据也失败: $e2');
       }
     }
-    
+
     stopwatch.stop();
-    debugPrint('DashboardHomePage: 数据加载完成，总耗时: ${stopwatch.elapsedMilliseconds}ms');
+    debugPrint(
+        'DashboardHomePage: 数据加载完成，总耗时: ${stopwatch.elapsedMilliseconds}ms');
   }
 
   // 检查并处理待处理的刷新请求
@@ -816,22 +846,23 @@ class _DashboardHomePageState extends State<DashboardHomePage>
       debugPrint('DashboardHomePage: Widget已销毁，跳过推荐内容加载');
       return;
     }
-    
+
     // 检查是否强制刷新或缓存已过期
-    if (!forceRefresh && _cachedRecommendedItems.isNotEmpty && 
-        _lastRecommendedLoadTime != null && 
+    if (!forceRefresh &&
+        _cachedRecommendedItems.isNotEmpty &&
+        _lastRecommendedLoadTime != null &&
         DateTime.now().difference(_lastRecommendedLoadTime!).inHours < 24) {
       debugPrint('DashboardHomePage: 使用缓存的推荐内容');
       setState(() {
         _recommendedItems = _cachedRecommendedItems;
         _isLoadingRecommended = false;
       });
-      
+
       // 推荐内容加载完成后启动自动切换
       if (_recommendedItems.length >= 5) {
         _startAutoSwitch();
       }
-      
+
       return;
     }
 
@@ -845,7 +876,8 @@ class _DashboardHomePageState extends State<DashboardHomePage>
       List<dynamic> allCandidates = [];
 
       // 从Jellyfin收集候选项目（按媒体库并行）
-      final jellyfinProvider = Provider.of<JellyfinProvider>(context, listen: false);
+      final jellyfinProvider =
+          Provider.of<JellyfinProvider>(context, listen: false);
       if (jellyfinProvider.isConnected) {
         final jellyfinService = JellyfinService.instance;
         final jellyfinFutures = <Future<List<JellyfinMediaItem>>>[];
@@ -857,13 +889,13 @@ class _DashboardHomePageState extends State<DashboardHomePage>
               jellyfinService
                   .getRandomMediaItemsByLibrary(library.id, limit: 50)
                   .then((items) {
-                    debugPrint('从Jellyfin媒体库 ${library.name} 收集到 ${items.length} 个候选项目');
-                    return items;
-                  })
-                  .catchError((e) {
-                    debugPrint('获取Jellyfin媒体库 ${library.name} 随机内容失败: $e');
-                    return <JellyfinMediaItem>[];
-                  }),
+                debugPrint(
+                    '从Jellyfin媒体库 ${library.name} 收集到 ${items.length} 个候选项目');
+                return items;
+              }).catchError((e) {
+                debugPrint('获取Jellyfin媒体库 ${library.name} 随机内容失败: $e');
+                return <JellyfinMediaItem>[];
+              }),
             );
           }
         }
@@ -886,13 +918,13 @@ class _DashboardHomePageState extends State<DashboardHomePage>
               embyService
                   .getRandomMediaItemsByLibrary(library.id, limit: 50)
                   .then((items) {
-                    debugPrint('从Emby媒体库 ${library.name} 收集到 ${items.length} 个候选项目');
-                    return items;
-                  })
-                  .catchError((e) {
-                    debugPrint('获取Emby媒体库 ${library.name} 随机内容失败: $e');
-                    return <EmbyMediaItem>[];
-                  }),
+                debugPrint(
+                    '从Emby媒体库 ${library.name} 收集到 ${items.length} 个候选项目');
+                return items;
+              }).catchError((e) {
+                debugPrint('获取Emby媒体库 ${library.name} 随机内容失败: $e');
+                return <EmbyMediaItem>[];
+              }),
             );
           }
         }
@@ -905,21 +937,24 @@ class _DashboardHomePageState extends State<DashboardHomePage>
       }
 
       // 从本地媒体库收集候选项目
-      final watchHistoryProvider = Provider.of<WatchHistoryProvider>(context, listen: false);
+      final watchHistoryProvider =
+          Provider.of<WatchHistoryProvider>(context, listen: false);
       if (watchHistoryProvider.isLoaded) {
         try {
           // 过滤掉Jellyfin和Emby的项目，只保留本地文件
-          final localHistory = watchHistoryProvider.history.where((item) => 
-            !item.filePath.startsWith('jellyfin://') &&
-            !item.filePath.startsWith('emby://')
-          ).toList();
-          
+          final localHistory = watchHistoryProvider.history
+              .where((item) =>
+                  !item.filePath.startsWith('jellyfin://') &&
+                  !item.filePath.startsWith('emby://'))
+              .toList();
+
           // 按animeId分组，获取每个动画的最新观看记录
           final Map<int, WatchHistoryItem> latestLocalItems = {};
           for (var item in localHistory) {
             if (item.animeId != null) {
               if (latestLocalItems.containsKey(item.animeId!)) {
-                if (item.lastWatchTime.isAfter(latestLocalItems[item.animeId!]!.lastWatchTime)) {
+                if (item.lastWatchTime
+                    .isAfter(latestLocalItems[item.animeId!]!.lastWatchTime)) {
                   latestLocalItems[item.animeId!] = item;
                 }
               } else {
@@ -927,11 +962,12 @@ class _DashboardHomePageState extends State<DashboardHomePage>
               }
             }
           }
-          
+
           // 随机选择一些本地项目 - 直接使用WatchHistoryItem作为候选
           final localItems = latestLocalItems.values.toList();
           localItems.shuffle(math.Random());
-          final selectedLocalItems = localItems.take(math.min(30, localItems.length)).toList();
+          final selectedLocalItems =
+              localItems.take(math.min(30, localItems.length)).toList();
           allCandidates.addAll(selectedLocalItems);
           debugPrint('从本地媒体库收集到 ${selectedLocalItems.length} 个候选项目');
         } catch (e) {
@@ -946,7 +982,8 @@ class _DashboardHomePageState extends State<DashboardHomePage>
       if (allCandidates.isNotEmpty) {
         allCandidates.shuffle(math.Random());
         selectedCandidates = allCandidates.take(7).toList();
-        debugPrint('从${allCandidates.length}个候选项目中随机选择了${selectedCandidates.length}个');
+        debugPrint(
+            '从${allCandidates.length}个候选项目中随机选择了${selectedCandidates.length}个');
       }
 
       // 第二点五步：预加载本地媒体项目的图片缓存，确保立即显示
@@ -967,7 +1004,8 @@ class _DashboardHomePageState extends State<DashboardHomePage>
             // Jellyfin项目 - 首屏即加载 Backdrop/Logo/详情（带验证与回退）
             final jellyfinService = JellyfinService.instance;
             final results = await Future.wait([
-              _tryGetJellyfinImage(jellyfinService, item.id, ['Backdrop', 'Primary', 'Art', 'Banner']),
+              _tryGetJellyfinImage(jellyfinService, item.id,
+                  ['Backdrop', 'Primary', 'Art', 'Banner']),
               _tryGetJellyfinImage(jellyfinService, item.id, ['Logo', 'Thumb']),
               _getJellyfinItemSubtitle(jellyfinService, item),
             ]);
@@ -978,21 +1016,27 @@ class _DashboardHomePageState extends State<DashboardHomePage>
             return RecommendedItem(
               id: item.id,
               title: item.name,
-              subtitle: (subtitle?.isNotEmpty == true) ? subtitle! : (item.overview?.isNotEmpty == true ? item.overview!
-                  .replaceAll('<br>', ' ')
-                  .replaceAll('<br/>', ' ')
-                  .replaceAll('<br />', ' ') : '暂无简介信息'),
+              subtitle: (subtitle?.isNotEmpty == true)
+                  ? subtitle!
+                  : (item.overview?.isNotEmpty == true
+                      ? item.overview!
+                          .replaceAll('<br>', ' ')
+                          .replaceAll('<br/>', ' ')
+                          .replaceAll('<br />', ' ')
+                      : '暂无简介信息'),
               backgroundImageUrl: backdropUrl,
               logoImageUrl: logoUrl,
               source: RecommendedItemSource.jellyfin,
-              rating: item.communityRating != null ? double.tryParse(item.communityRating!) : null,
+              rating: item.communityRating != null
+                  ? double.tryParse(item.communityRating!)
+                  : null,
             );
-            
           } else if (item is EmbyMediaItem) {
             // Emby项目 - 首屏即加载 Backdrop/Logo/详情（带验证与回退）
             final embyService = EmbyService.instance;
             final results = await Future.wait([
-              _tryGetEmbyImage(embyService, item.id, ['Backdrop', 'Primary', 'Art', 'Banner']),
+              _tryGetEmbyImage(embyService, item.id,
+                  ['Backdrop', 'Primary', 'Art', 'Banner']),
               _tryGetEmbyImage(embyService, item.id, ['Logo', 'Thumb']),
               _getEmbyItemSubtitle(embyService, item),
             ]);
@@ -1003,30 +1047,36 @@ class _DashboardHomePageState extends State<DashboardHomePage>
             return RecommendedItem(
               id: item.id,
               title: item.name,
-              subtitle: (subtitle?.isNotEmpty == true) ? subtitle! : (item.overview?.isNotEmpty == true ? item.overview!
-                  .replaceAll('<br>', ' ')
-                  .replaceAll('<br/>', ' ')
-                  .replaceAll('<br />', ' ') : '暂无简介信息'),
+              subtitle: (subtitle?.isNotEmpty == true)
+                  ? subtitle!
+                  : (item.overview?.isNotEmpty == true
+                      ? item.overview!
+                          .replaceAll('<br>', ' ')
+                          .replaceAll('<br/>', ' ')
+                          .replaceAll('<br />', ' ')
+                      : '暂无简介信息'),
               backgroundImageUrl: backdropUrl,
               logoImageUrl: logoUrl,
               source: RecommendedItemSource.emby,
-              rating: item.communityRating != null ? double.tryParse(item.communityRating!) : null,
+              rating: item.communityRating != null
+                  ? double.tryParse(item.communityRating!)
+                  : null,
             );
-            
           } else if (item is WatchHistoryItem) {
             // 本地媒体库项目 - 先用缓存的封面图片
             String? cachedImageUrl;
             String subtitle = '暂无简介信息';
-            
+
             if (item.animeId != null) {
               // 从缓存获取图片URL（来自本地图片缓存）
               cachedImageUrl = _localImageCache[item.animeId!];
-              
+
               // 优先读取持久化的高清图缓存（与媒体库页复用同一Key前缀）
               if (cachedImageUrl == null) {
                 try {
                   final prefs = await SharedPreferences.getInstance();
-                  final persisted = prefs.getString('$_localPrefsKeyPrefix${item.animeId!}');
+                  final persisted =
+                      prefs.getString('$_localPrefsKeyPrefix${item.animeId!}');
                   if (persisted != null && persisted.isNotEmpty) {
                     cachedImageUrl = persisted;
                     _localImageCache[item.animeId!] = persisted; // 写回内存缓存
@@ -1041,14 +1091,16 @@ class _DashboardHomePageState extends State<DashboardHomePage>
                 final String? cachedString = prefs.getString(cacheKey);
                 if (cachedString != null) {
                   final data = json.decode(cachedString);
-                  final animeData = data['animeDetail'] as Map<String, dynamic>?;
+                  final animeData =
+                      data['animeDetail'] as Map<String, dynamic>?;
                   if (animeData != null) {
                     final summary = animeData['summary'] as String?;
                     final imageUrl = animeData['imageUrl'] as String?;
                     if (summary?.isNotEmpty == true) {
                       subtitle = summary!;
                     }
-                    if (cachedImageUrl == null && imageUrl?.isNotEmpty == true) {
+                    if (cachedImageUrl == null &&
+                        imageUrl?.isNotEmpty == true) {
                       cachedImageUrl = imageUrl;
                     }
                   }
@@ -1057,10 +1109,12 @@ class _DashboardHomePageState extends State<DashboardHomePage>
                 // 忽略缓存访问错误
               }
             }
-            
+
             return RecommendedItem(
               id: item.animeId?.toString() ?? item.filePath,
-              title: item.animeName.isNotEmpty ? item.animeName : (item.episodeTitle ?? '未知动画'),
+              title: item.animeName.isNotEmpty
+                  ? item.animeName
+                  : (item.episodeTitle ?? '未知动画'),
               subtitle: subtitle,
               backgroundImageUrl: cachedImageUrl,
               logoImageUrl: null,
@@ -1074,10 +1128,13 @@ class _DashboardHomePageState extends State<DashboardHomePage>
         }
         return null;
       });
-      
+
       // 等待基础项目构建完成
       final processedItems = await Future.wait(itemFutures);
-      basicItems = processedItems.where((item) => item != null).cast<RecommendedItem>().toList();
+      basicItems = processedItems
+          .where((item) => item != null)
+          .cast<RecommendedItem>()
+          .toList();
 
       // 如果还不够7个，添加占位符
       while (basicItems.length < 7) {
@@ -1098,24 +1155,26 @@ class _DashboardHomePageState extends State<DashboardHomePage>
           _recommendedItems = basicItems;
           _isLoadingRecommended = false;
         });
-        
+
         // 缓存推荐内容和加载时间
         _cachedRecommendedItems = basicItems;
         _lastRecommendedLoadTime = DateTime.now();
-        
+
         // 推荐内容加载完成后启动自动切换
         if (basicItems.length >= 5) {
           _startAutoSwitch();
         }
-        
+
         // 检查是否有待处理的刷新请求
         _checkPendingRefresh();
       }
-      
+
       // 第五步：后台异步升级为高清图片（仅对本地媒体生效，Jellyfin/Emby已首屏获取完毕）
       final localCandidates = <dynamic>[];
       final localBasicItems = <RecommendedItem>[];
-      for (int i = 0; i < selectedCandidates.length && i < basicItems.length; i++) {
+      for (int i = 0;
+          i < selectedCandidates.length && i < basicItems.length;
+          i++) {
         if (selectedCandidates[i] is WatchHistoryItem) {
           localCandidates.add(selectedCandidates[i]);
           localBasicItems.add(basicItems[i]);
@@ -1124,7 +1183,7 @@ class _DashboardHomePageState extends State<DashboardHomePage>
       if (localCandidates.isNotEmpty) {
         _upgradeToHighQualityImages(localCandidates, localBasicItems);
       }
-      
+
       debugPrint('推荐内容基础加载完成，总共 ${basicItems.length} 个项目，后台正在加载高清图片');
     } catch (e) {
       debugPrint('加载推荐内容失败: $e');
@@ -1132,7 +1191,7 @@ class _DashboardHomePageState extends State<DashboardHomePage>
         setState(() {
           _isLoadingRecommended = false;
         });
-        
+
         // 检查是否有待处理的刷新请求
         _checkPendingRefresh();
       }
@@ -1143,8 +1202,9 @@ class _DashboardHomePageState extends State<DashboardHomePage>
     debugPrint('DashboardHomePage: 开始加载最近内容');
     try {
       // 从Jellyfin按媒体库获取最近添加（按库并行）
-  final jellyfinProvider = Provider.of<JellyfinProvider>(context, listen: false);
-  if (jellyfinProvider.isConnected) {
+      final jellyfinProvider =
+          Provider.of<JellyfinProvider>(context, listen: false);
+      if (jellyfinProvider.isConnected) {
         final jellyfinService = JellyfinService.instance;
         _recentJellyfinItemsByLibrary.clear();
         final jfFutures = <Future<void>>[];
@@ -1152,10 +1212,12 @@ class _DashboardHomePageState extends State<DashboardHomePage>
           if (jellyfinService.selectedLibraryIds.contains(library.id)) {
             jfFutures.add(() async {
               try {
-                final libraryItems = await jellyfinService.getLatestMediaItemsByLibrary(library.id, limit: 25);
+                final libraryItems = await jellyfinService
+                    .getLatestMediaItemsByLibrary(library.id, limit: 25);
                 if (libraryItems.isNotEmpty) {
                   _recentJellyfinItemsByLibrary[library.name] = libraryItems;
-                  debugPrint('Jellyfin媒体库 ${library.name} 获取到 ${libraryItems.length} 个项目');
+                  debugPrint(
+                      'Jellyfin媒体库 ${library.name} 获取到 ${libraryItems.length} 个项目');
                 }
               } catch (e) {
                 debugPrint('获取Jellyfin媒体库 ${library.name} 最近内容失败: $e');
@@ -1172,8 +1234,8 @@ class _DashboardHomePageState extends State<DashboardHomePage>
       }
 
       // 从Emby按媒体库获取最近添加（按库并行）
-  final embyProvider = Provider.of<EmbyProvider>(context, listen: false);
-  if (embyProvider.isConnected) {
+      final embyProvider = Provider.of<EmbyProvider>(context, listen: false);
+      if (embyProvider.isConnected) {
         final embyService = EmbyService.instance;
         _recentEmbyItemsByLibrary.clear();
         final emFutures = <Future<void>>[];
@@ -1181,10 +1243,12 @@ class _DashboardHomePageState extends State<DashboardHomePage>
           if (embyService.selectedLibraryIds.contains(library.id)) {
             emFutures.add(() async {
               try {
-                final libraryItems = await embyService.getLatestMediaItemsByLibrary(library.id, limit: 25);
+                final libraryItems = await embyService
+                    .getLatestMediaItemsByLibrary(library.id, limit: 25);
                 if (libraryItems.isNotEmpty) {
                   _recentEmbyItemsByLibrary[library.name] = libraryItems;
-                  debugPrint('Emby媒体库 ${library.name} 获取到 ${libraryItems.length} 个项目');
+                  debugPrint(
+                      'Emby媒体库 ${library.name} 获取到 ${libraryItems.length} 个项目');
                 }
               } catch (e) {
                 debugPrint('获取Emby媒体库 ${library.name} 最近内容失败: $e');
@@ -1201,14 +1265,16 @@ class _DashboardHomePageState extends State<DashboardHomePage>
       }
 
       // 从本地媒体库获取最近添加（优化：不做逐文件stat，按历史记录时间排序，图片懒加载+持久化）
-      final watchHistoryProvider = Provider.of<WatchHistoryProvider>(context, listen: false);
+      final watchHistoryProvider =
+          Provider.of<WatchHistoryProvider>(context, listen: false);
       if (watchHistoryProvider.isLoaded) {
         try {
           // 过滤掉Jellyfin和Emby的项目，只保留本地文件
-          final localHistory = watchHistoryProvider.history.where((item) => 
-            !item.filePath.startsWith('jellyfin://') &&
-            !item.filePath.startsWith('emby://')
-          ).toList();
+          final localHistory = watchHistoryProvider.history
+              .where((item) =>
+                  !item.filePath.startsWith('jellyfin://') &&
+                  !item.filePath.startsWith('emby://'))
+              .toList();
 
           // 按animeId分组，选取"添加时间"代表：
           // 优先使用 isFromScan 为 true 的记录的 lastWatchTime（扫描入库时间），否则用最近一次 lastWatchTime
@@ -1219,7 +1285,8 @@ class _DashboardHomePageState extends State<DashboardHomePage>
             final animeId = item.animeId;
             if (animeId == null) continue;
 
-            final candidateTime = item.isFromScan ? item.lastWatchTime : item.lastWatchTime;
+            final candidateTime =
+                item.isFromScan ? item.lastWatchTime : item.lastWatchTime;
             if (!representativeItems.containsKey(animeId)) {
               representativeItems[animeId] = item;
               addedTimeMap[animeId] = candidateTime;
@@ -1236,14 +1303,17 @@ class _DashboardHomePageState extends State<DashboardHomePage>
           await _loadPersistedLocalImageUrls(addedTimeMap.keys.toSet());
 
           // 构建 LocalAnimeItem 列表（先用缓存命中图片，未命中先留空，稍后后台补齐）
-          List<LocalAnimeItem> localAnimeItems = representativeItems.entries.map((entry) {
+          List<LocalAnimeItem> localAnimeItems =
+              representativeItems.entries.map((entry) {
             final animeId = entry.key;
             final latestEpisode = entry.value;
             final addedTime = addedTimeMap[animeId]!;
             final cachedImg = _localImageCache[animeId];
             return LocalAnimeItem(
               animeId: animeId,
-              animeName: latestEpisode.animeName.isNotEmpty ? latestEpisode.animeName : '未知动画',
+              animeName: latestEpisode.animeName.isNotEmpty
+                  ? latestEpisode.animeName
+                  : '未知动画',
               imageUrl: cachedImg,
               backdropImageUrl: cachedImg,
               addedTime: addedTime,
@@ -1258,7 +1328,8 @@ class _DashboardHomePageState extends State<DashboardHomePage>
           }
 
           _localAnimeItems = localAnimeItems;
-          debugPrint('本地媒体库获取到 ${_localAnimeItems.length} 个项目（首屏使用缓存图片，后台补齐高清图）');
+          debugPrint(
+              '本地媒体库获取到 ${_localAnimeItems.length} 个项目（首屏使用缓存图片，后台补齐高清图）');
         } catch (e) {
           debugPrint('获取本地媒体库最近内容失败: $e');
         }
@@ -1300,9 +1371,9 @@ class _DashboardHomePageState extends State<DashboardHomePage>
   Future<void> _fetchLocalAnimeImagesInBackground() async {
     if (_isLoadingLocalImages) return;
     _isLoadingLocalImages = true;
-    
+
     debugPrint('开始后台获取本地番剧缺失图片，待处理项目: ${_localAnimeItems.length}');
-    
+
     const int maxConcurrent = 3;
     final inflight = <Future<void>>[];
     int processedCount = 0;
@@ -1310,7 +1381,7 @@ class _DashboardHomePageState extends State<DashboardHomePage>
 
     for (final item in _localAnimeItems) {
       final id = item.animeId;
-      if (_localImageCache.containsKey(id) && 
+      if (_localImageCache.containsKey(id) &&
           _localImageCache[id]?.isNotEmpty == true) {
         continue; // 已有缓存且不为空，跳过
       }
@@ -1320,7 +1391,7 @@ class _DashboardHomePageState extends State<DashboardHomePage>
           // 先尝试从BangumiService缓存获取
           String? imageUrl;
           // String? summary; // 暂时不需要summary变量
-          
+
           // 尝试从SharedPreferences获取已缓存的详情
           try {
             final prefs = await SharedPreferences.getInstance();
@@ -1337,23 +1408,23 @@ class _DashboardHomePageState extends State<DashboardHomePage>
           } catch (e) {
             // 忽略缓存读取错误
           }
-          
+
           // 如果缓存中没有，再从网络获取
           if (imageUrl?.isEmpty != false) {
             final detail = await BangumiService.instance.getAnimeDetails(id);
             imageUrl = detail.imageUrl;
             // summary = detail.summary; // 不需要summary
           }
-          
+
           if (imageUrl?.isNotEmpty == true) {
             _localImageCache[id] = imageUrl!;
-            
+
             // 异步保存到持久化缓存
             try {
               final prefs = await SharedPreferences.getInstance();
               await prefs.setString('$_localPrefsKeyPrefix$id', imageUrl);
             } catch (_) {}
-            
+
             if (mounted) {
               // 批量更新，减少UI重绘次数
               final idx = _localAnimeItems.indexWhere((e) => e.animeId == id);
@@ -1382,10 +1453,10 @@ class _DashboardHomePageState extends State<DashboardHomePage>
       fut.whenComplete(() {
         inflight.remove(fut);
       });
-      
+
       if (inflight.length >= maxConcurrent) {
-        try { 
-          await Future.any(inflight); 
+        try {
+          await Future.any(inflight);
           // 每处理几个项目就更新一次UI，而不是等全部完成
           if (updatedCount > 0 && processedCount % 5 == 0 && mounted) {
             setState(() {});
@@ -1394,15 +1465,15 @@ class _DashboardHomePageState extends State<DashboardHomePage>
       }
     }
 
-    try { 
-      await Future.wait(inflight); 
+    try {
+      await Future.wait(inflight);
     } catch (_) {}
-    
+
     // 最终更新UI
     if (mounted && updatedCount > 0) {
       setState(() {});
     }
-    
+
     debugPrint('本地番剧图片后台获取完成，处理: $processedCount，更新: $updatedCount');
     _isLoadingLocalImages = false;
   }
@@ -1410,70 +1481,80 @@ class _DashboardHomePageState extends State<DashboardHomePage>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    
+
     // 当播放器处于活跃状态时，关闭 Dashboard 上的所有 Ticker（动画/过渡），避免后台动画占用栅格时间。
     final bool tickerEnabled = !_isVideoPlayerActive();
-  final bool isPhone = MediaQuery.of(context).size.shortestSide < 600;
+    final bool isPhone = MediaQuery.of(context).size.shortestSide < 600;
 
     return TickerMode(
       enabled: tickerEnabled,
       child: Scaffold(
-      backgroundColor: Colors.transparent,
-      body: Consumer2<JellyfinProvider, EmbyProvider>(
-        builder: (context, jellyfinProvider, embyProvider, child) {
-          return SingleChildScrollView(
-            controller: _mainScrollController,
-            physics: const AlwaysScrollableScrollPhysics(),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+        backgroundColor: Colors.transparent,
+        body: Consumer2<JellyfinProvider, EmbyProvider>(
+          builder: (context, jellyfinProvider, embyProvider, child) {
+            return SingleChildScrollView(
+              controller: _mainScrollController,
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   // 大海报推荐区域
                   _buildHeroBanner(isPhone: isPhone),
-                  
+
                   SizedBox(height: isPhone ? 16 : 32), // 手机端减少间距
-                  
+
                   // 继续播放区域
                   _buildContinueWatching(isPhone: isPhone),
-                  
+
                   SizedBox(height: isPhone ? 12 : 32), // 手机端进一步减少间距
-                  
+
                   // Jellyfin按媒体库显示最近添加
-                  ..._recentJellyfinItemsByLibrary.entries.map((entry) => [
-                    _buildRecentSection(
-                      title: 'Jellyfin - 新增${entry.key}',
-                      items: entry.value,
-                      scrollController: _getJellyfinLibraryScrollController(entry.key),
-                      onItemTap: (item) => _onJellyfinItemTap(item as JellyfinMediaItem),
-                    ),
-                    SizedBox(height: isPhone ? 16 : 32), // 手机端减少间距
-                  ]).expand((x) => x),
-                  
+                  ..._recentJellyfinItemsByLibrary.entries
+                      .map((entry) => [
+                            _buildRecentSection(
+                              title: 'Jellyfin - 新增${entry.key}',
+                              items: entry.value,
+                              scrollController:
+                                  _getJellyfinLibraryScrollController(
+                                      entry.key),
+                              onItemTap: (item) =>
+                                  _onJellyfinItemTap(item as JellyfinMediaItem),
+                            ),
+                            SizedBox(height: isPhone ? 16 : 32), // 手机端减少间距
+                          ])
+                      .expand((x) => x),
+
                   // Emby按媒体库显示最近添加
-                  ..._recentEmbyItemsByLibrary.entries.map((entry) => [
-                    _buildRecentSection(
-                      title: 'Emby - 新增${entry.key}',
-                      items: entry.value,
-                      scrollController: _getEmbyLibraryScrollController(entry.key),
-                      onItemTap: (item) => _onEmbyItemTap(item as EmbyMediaItem),
-                    ),
-                    SizedBox(height: isPhone ? 16 : 32), // 手机端减少间距
-                  ]).expand((x) => x),
-                  
+                  ..._recentEmbyItemsByLibrary.entries
+                      .map((entry) => [
+                            _buildRecentSection(
+                              title: 'Emby - 新增${entry.key}',
+                              items: entry.value,
+                              scrollController:
+                                  _getEmbyLibraryScrollController(entry.key),
+                              onItemTap: (item) =>
+                                  _onEmbyItemTap(item as EmbyMediaItem),
+                            ),
+                            SizedBox(height: isPhone ? 16 : 32), // 手机端减少间距
+                          ])
+                      .expand((x) => x),
+
                   // 本地媒体库显示最近添加
                   if (_localAnimeItems.isNotEmpty) ...[
                     _buildRecentSection(
                       title: '本地媒体库 - 最近添加',
                       items: _localAnimeItems,
                       scrollController: _getLocalLibraryScrollController(),
-                      onItemTap: (item) => _onLocalAnimeItemTap(item as LocalAnimeItem),
+                      onItemTap: (item) =>
+                          _onLocalAnimeItemTap(item as LocalAnimeItem),
                     ),
                     SizedBox(height: isPhone ? 16 : 32), // 手机端减少间距
                   ],
-                  
+
                   // 空状态提示（当没有任何内容时）
-                  if (_recentJellyfinItemsByLibrary.isEmpty && 
-                      _recentEmbyItemsByLibrary.isEmpty && 
-                      _localAnimeItems.isEmpty && 
+                  if (_recentJellyfinItemsByLibrary.isEmpty &&
+                      _recentEmbyItemsByLibrary.isEmpty &&
+                      _localAnimeItems.isEmpty &&
                       !_isLoadingRecommended) ...[
                     Container(
                       height: 200,
@@ -1493,10 +1574,12 @@ class _DashboardHomePageState extends State<DashboardHomePage>
                             ),
                             const SizedBox(height: 16),
                             Text(
-                              jellyfinProvider.isConnected || embyProvider.isConnected
+                              jellyfinProvider.isConnected ||
+                                      embyProvider.isConnected
                                   ? '正在加载内容...'
                                   : '连接媒体服务器或观看本地视频以查看内容',
-                              style: const TextStyle(color: Colors.white54, fontSize: 16),
+                              style: const TextStyle(
+                                  color: Colors.white54, fontSize: 16),
                             ),
                           ],
                         ),
@@ -1504,40 +1587,43 @@ class _DashboardHomePageState extends State<DashboardHomePage>
                     ),
                     SizedBox(height: isPhone ? 16 : 32), // 手机端减少间距
                   ],
-                  
+
                   // 底部间距
                   SizedBox(height: isPhone ? 30 : 50),
                 ],
               ),
             );
-        },
-      ),
-      floatingActionButton: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // 挂载本地媒体库按钮
-          FloatingActionGlassButton(
-            iconData: Icons.folder_open_rounded,
-            onPressed: _navigateToMediaLibraryManagement,
-            description: '挂载本地媒体库',
-          ),
-          const SizedBox(height: 16),
-          // 刷新按钮
-          _isLoadingRecommended 
-              ? FloatingActionGlassButton(
-                  iconData: Icons.refresh_rounded,
-                  onPressed: () {}, // 加载中时禁用
-                  description: '正在刷新...',
-                )
-              : FloatingActionGlassButton(
-                  iconData: Icons.refresh_rounded,
-                  onPressed: _loadData,
-                  description: ' 刷新主页',
-                ),
-        ],
-      ),
+          },
         ),
-      );
+        floatingActionButton: Padding(
+          padding: const EdgeInsets.only(bottom: 80), // 向上移动
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // 挂载本地媒体库按钮
+              FloatingActionGlassButton(
+                iconData: Icons.folder_open_rounded,
+                onPressed: _navigateToMediaLibraryManagement,
+                description: '挂载本地媒体库',
+              ),
+              const SizedBox(height: 16),
+              // 刷新按钮
+              _isLoadingRecommended
+                  ? FloatingActionGlassButton(
+                      iconData: Icons.refresh_rounded,
+                      onPressed: () {}, // 加载中时禁用
+                      description: '正在刷新...',
+                    )
+                  : FloatingActionGlassButton(
+                      iconData: Icons.refresh_rounded,
+                      onPressed: _loadData,
+                      description: ' 刷新主页',
+                    ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildHeroBanner({required bool isPhone}) {
@@ -1566,15 +1652,17 @@ class _DashboardHomePageState extends State<DashboardHomePage>
         child: const Center(
           child: Text(
             '暂无推荐内容',
-            locale:Locale("zh-Hans","zh"),
-style: TextStyle(color: Colors.white54, fontSize: 16),
+            locale: Locale("zh-Hans", "zh"),
+            style: TextStyle(color: Colors.white54, fontSize: 16),
           ),
         ),
       );
     }
 
     // 确保至少有7个项目用于布局
-    final items = _recommendedItems.length >= 7 ? _recommendedItems.take(7).toList() : _recommendedItems;
+    final items = _recommendedItems.length >= 7
+        ? _recommendedItems.take(7).toList()
+        : _recommendedItems;
     if (items.length < 7) {
       // 如果不足7个，填充占位符
       while (items.length < 7) {
@@ -1645,15 +1733,17 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
                   flex: 1,
                   child: Column(
                     children: [
-                      Expanded(child: _buildSmallRecommendationCard(items[5], 5)),
+                      Expanded(
+                          child: _buildSmallRecommendationCard(items[5], 5)),
                       const SizedBox(height: 8),
-                      Expanded(child: _buildSmallRecommendationCard(items[6], 6)),
+                      Expanded(
+                          child: _buildSmallRecommendationCard(items[6], 6)),
                     ],
                   ),
                 ),
               ],
             ),
-          
+
           // 页面指示器
           _buildPageIndicator(fullWidth: isPhone, count: pageCount),
         ],
@@ -1661,7 +1751,8 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
     );
   }
 
-  Widget _buildMainHeroBannerItem(RecommendedItem item, {bool compact = false}) {
+  Widget _buildMainHeroBannerItem(RecommendedItem item,
+      {bool compact = false}) {
     return GestureDetector(
       onTap: () => _onRecommendedItemTap(item),
       child: Container(
@@ -1675,7 +1766,8 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
           fit: StackFit.expand,
           children: [
             // 背景图 - 使用高效缓存组件
-            if (item.backgroundImageUrl != null && item.backgroundImageUrl!.isNotEmpty)
+            if (item.backgroundImageUrl != null &&
+                item.backgroundImageUrl!.isNotEmpty)
               CachedNetworkImageWidget(
                 key: ValueKey('hero_img_${item.id}_${item.backgroundImageUrl}'),
                 imageUrl: item.backgroundImageUrl!,
@@ -1703,7 +1795,7 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
                   ),
                 ),
               ),
-            
+
             // 遮罩层
             Container(
               decoration: BoxDecoration(
@@ -1717,14 +1809,14 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
                 ),
               ),
             ),
-            
+
             // 左上角服务商标识
             Positioned(
               top: 16,
               left: 16,
               child: _buildServiceIcon(item.source),
             ),
-            
+
             // 右上角评分
             if (item.rating != null)
               Positioned(
@@ -1733,9 +1825,20 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(12),
                   child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: context.watch<AppearanceSettingsProvider>().enableWidgetBlurEffect ? 25 : 0, sigmaY: context.watch<AppearanceSettingsProvider>().enableWidgetBlurEffect ? 25 : 0),
+                    filter: ImageFilter.blur(
+                        sigmaX: context
+                                .watch<AppearanceSettingsProvider>()
+                                .enableWidgetBlurEffect
+                            ? 25
+                            : 0,
+                        sigmaY: context
+                                .watch<AppearanceSettingsProvider>()
+                                .enableWidgetBlurEffect
+                            ? 25
+                            : 0),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(12),
@@ -1767,7 +1870,7 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
                   ),
                 ),
               ),
-            
+
             // 左下角Logo - 使用高效缓存组件
             if (item.logoImageUrl != null && item.logoImageUrl!.isNotEmpty)
               Positioned(
@@ -1777,10 +1880,11 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
                   child: Container(
                     constraints: BoxConstraints(
                       maxWidth: compact ? 120 : 200, // 手机端更小
-                      maxHeight: compact ? 50 : 80,  // 手机端更小
+                      maxHeight: compact ? 50 : 80, // 手机端更小
                     ),
                     child: CachedNetworkImageWidget(
-                      key: ValueKey('hero_logo_${item.id}_${item.logoImageUrl}'),
+                      key:
+                          ValueKey('hero_logo_${item.id}_${item.logoImageUrl}'),
                       imageUrl: item.logoImageUrl!,
                       delayLoad: _shouldDelayImageLoad(), // 根据推荐内容来源决定是否延迟
                       fit: BoxFit.contain,
@@ -1796,7 +1900,7 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
                   child: Container(
                     constraints: BoxConstraints(
                       maxWidth: compact ? 120 : 200, // 手机端更小
-                      maxHeight: compact ? 50 : 80,  // 手机端更小
+                      maxHeight: compact ? 50 : 80, // 手机端更小
                     ),
                     child: Image.network(
                       item.logoImageUrl!,
@@ -1818,11 +1922,13 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
                   ),
                 ),
               ),
-            
+
             // 左侧中间位置的标题和简介
             Positioned(
               left: 16,
-              right: compact ? 16 : MediaQuery.of(context).size.width * 0.3, // 手机上不预留右侧空间
+              right: compact
+                  ? 16
+                  : MediaQuery.of(context).size.width * 0.3, // 手机上不预留右侧空间
               top: 0,
               bottom: 0,
               child: Align(
@@ -1834,8 +1940,8 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
                     // 媒体名字（加粗显示）
                     Text(
                       item.title,
-                      locale:Locale("zh-Hans","zh"),
-style: TextStyle(
+                      locale: Locale("zh-Hans", "zh"),
+                      style: TextStyle(
                         color: Colors.white,
                         fontSize: compact ? 22 : 24, // 手机端调整为20px，比18px稍大
                         fontWeight: FontWeight.bold,
@@ -1849,15 +1955,18 @@ style: TextStyle(
                       maxLines: compact ? 3 : 2, // 手机端可以显示更多行
                       overflow: TextOverflow.ellipsis,
                     ),
-                    
+
                     // 桌面端显示间距和简介，手机端不显示
                     if (!compact) ...[
                       const SizedBox(height: 12),
-                      
+
                       // 剧情简介（只在桌面端显示）
                       if (item.subtitle.isNotEmpty)
                         Text(
-                          item.subtitle.replaceAll('<br>', ' ').replaceAll('<br/>', ' ').replaceAll('<br />', ' '),
+                          item.subtitle
+                              .replaceAll('<br>', ' ')
+                              .replaceAll('<br/>', ' ')
+                              .replaceAll('<br />', ' '),
                           style: const TextStyle(
                             color: Colors.white70,
                             fontSize: 14,
@@ -1886,7 +1995,8 @@ style: TextStyle(
     return GestureDetector(
       onTap: () => _onRecommendedItemTap(item),
       child: Container(
-        key: ValueKey('small_card_${item.id}_${item.source.name}_$index'), // 添加唯一key包含索引
+        key: ValueKey(
+            'small_card_${item.id}_${item.source.name}_$index'), // 添加唯一key包含索引
         margin: const EdgeInsets.symmetric(horizontal: 2),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(8),
@@ -1903,9 +2013,11 @@ style: TextStyle(
           fit: StackFit.expand,
           children: [
             // 背景图 - 使用高效缓存组件
-            if (item.backgroundImageUrl != null && item.backgroundImageUrl!.isNotEmpty)
+            if (item.backgroundImageUrl != null &&
+                item.backgroundImageUrl!.isNotEmpty)
               CachedNetworkImageWidget(
-                key: ValueKey('small_img_${item.id}_${item.backgroundImageUrl}_$index'),
+                key: ValueKey(
+                    'small_img_${item.id}_${item.backgroundImageUrl}_$index'),
                 imageUrl: item.backgroundImageUrl!,
                 fit: BoxFit.cover,
                 delayLoad: _shouldDelayImageLoad(), // 根据推荐内容来源决定是否延迟
@@ -1914,7 +2026,8 @@ style: TextStyle(
                 errorBuilder: (context, error) => Container(
                   color: Colors.white10,
                   child: const Center(
-                    child: Icon(Icons.broken_image, color: Colors.white30, size: 16),
+                    child: Icon(Icons.broken_image,
+                        color: Colors.white30, size: 16),
                   ),
                 ),
               )
@@ -1931,7 +2044,7 @@ style: TextStyle(
                   ),
                 ),
               ),
-            
+
             // 遮罩层
             Container(
               decoration: BoxDecoration(
@@ -1945,14 +2058,14 @@ style: TextStyle(
                 ),
               ),
             ),
-            
+
             // 左上角服务商标识
             Positioned(
               top: 8,
               left: 8,
               child: _buildServiceIcon(item.source),
             ),
-            
+
             // 右上角评分
             if (item.rating != null)
               Positioned(
@@ -1961,9 +2074,20 @@ style: TextStyle(
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(8),
                   child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: context.watch<AppearanceSettingsProvider>().enableWidgetBlurEffect ? 25 : 0, sigmaY: context.watch<AppearanceSettingsProvider>().enableWidgetBlurEffect ? 25 : 0),
+                    filter: ImageFilter.blur(
+                        sigmaX: context
+                                .watch<AppearanceSettingsProvider>()
+                                .enableWidgetBlurEffect
+                            ? 25
+                            : 0,
+                        sigmaY: context
+                                .watch<AppearanceSettingsProvider>()
+                                .enableWidgetBlurEffect
+                            ? 25
+                            : 0),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(8),
@@ -1995,7 +2119,7 @@ style: TextStyle(
                   ),
                 ),
               ),
-            
+
             // 左下角小Logo（如果有的话）
             // Logo图片 - 使用高效缓存组件
             if (item.logoImageUrl != null && item.logoImageUrl!.isNotEmpty)
@@ -2008,7 +2132,8 @@ style: TextStyle(
                     maxHeight: 45,
                   ),
                   child: CachedNetworkImageWidget(
-                    key: ValueKey('small_logo_${item.id}_${item.logoImageUrl}_$index'),
+                    key: ValueKey(
+                        'small_logo_${item.id}_${item.logoImageUrl}_$index'),
                     imageUrl: item.logoImageUrl!,
                     fit: BoxFit.contain,
                     delayLoad: _shouldDelayImageLoad(), // 根据推荐内容来源决定是否延迟
@@ -2043,7 +2168,7 @@ style: TextStyle(
                   ),
                 ),
               ),
-            
+
             // 右下角标题（总是显示，不论是否有Logo）
             Positioned(
               right: 8,
@@ -2081,7 +2206,7 @@ style: TextStyle(
 
   Widget _buildServiceIcon(RecommendedItemSource source) {
     Widget iconWidget;
-    
+
     switch (source) {
       case RecommendedItemSource.jellyfin:
         iconWidget = SvgPicture.asset(
@@ -2110,11 +2235,21 @@ style: TextStyle(
       default:
         return const SizedBox.shrink();
     }
-    
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(8),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: context.watch<AppearanceSettingsProvider>().enableWidgetBlurEffect ? 25 : 0, sigmaY: context.watch<AppearanceSettingsProvider>().enableWidgetBlurEffect ? 25 : 0),
+        filter: ImageFilter.blur(
+            sigmaX: context
+                    .watch<AppearanceSettingsProvider>()
+                    .enableWidgetBlurEffect
+                ? 25
+                : 0,
+            sigmaY: context
+                    .watch<AppearanceSettingsProvider>()
+                    .enableWidgetBlurEffect
+                ? 25
+                : 0),
         child: Container(
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
@@ -2135,7 +2270,8 @@ style: TextStyle(
     return Consumer<WatchHistoryProvider>(
       builder: (context, historyProvider, child) {
         final history = historyProvider.history;
-        final validHistory = history.where((item) => item.duration > 0).toList();
+        final validHistory =
+            history.where((item) => item.duration > 0).toList();
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -2147,8 +2283,8 @@ style: TextStyle(
                     padding: EdgeInsets.symmetric(horizontal: 16),
                     child: Text(
                       '继续播放',
-                      locale:Locale("zh-Hans","zh"),
-style: TextStyle(
+                      locale: Locale("zh-Hans", "zh"),
+                      style: TextStyle(
                         color: Colors.white,
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -2157,7 +2293,8 @@ style: TextStyle(
                   ),
                 ),
                 if (!isPhone && validHistory.isNotEmpty)
-                  _buildScrollButtons(_continueWatchingScrollController, 292), // 桌面保留左右按钮
+                  _buildScrollButtons(
+                      _continueWatchingScrollController, 292), // 桌面保留左右按钮
               ],
             ),
             const SizedBox(height: 16),
@@ -2172,8 +2309,8 @@ style: TextStyle(
                 child: const Center(
                   child: Text(
                     '暂无播放记录',
-                    locale:Locale("zh-Hans","zh"),
-style: TextStyle(color: Colors.white54, fontSize: 16),
+                    locale: Locale("zh-Hans", "zh"),
+                    style: TextStyle(color: Colors.white54, fontSize: 16),
                   ),
                 ),
               )
@@ -2200,11 +2337,13 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
     );
   }
 
-  Widget _buildContinueWatchingCard(WatchHistoryItem item, {bool compact = false}) {
+  Widget _buildContinueWatchingCard(WatchHistoryItem item,
+      {bool compact = false}) {
     return GestureDetector(
       onTap: () => _onWatchHistoryItemTap(item),
       child: SizedBox(
-        key: ValueKey('continue_${item.animeId ?? 0}_${item.filePath.hashCode}'), // 添加唯一key
+        key: ValueKey(
+            'continue_${item.animeId ?? 0}_${item.filePath.hashCode}'), // 添加唯一key
         width: compact ? 220 : 280, // 手机更窄
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -2228,7 +2367,7 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
                 children: [
                   // 背景缩略图
                   _getVideoThumbnail(item),
-                  
+
                   // 播放进度条（底部）
                   Positioned(
                     bottom: 0,
@@ -2246,12 +2385,14 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
                 ],
               ),
             ),
-            
+
             const SizedBox(height: 8),
-            
+
             // 媒体名称
             Text(
-              item.animeName.isNotEmpty ? item.animeName : path.basename(item.filePath),
+              item.animeName.isNotEmpty
+                  ? item.animeName
+                  : path.basename(item.filePath),
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 16, // 增加字体大小
@@ -2260,9 +2401,9 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
               maxLines: 2, // 增加显示行数
               overflow: TextOverflow.ellipsis,
             ),
-            
+
             const SizedBox(height: 4),
-            
+
             // 集数信息
             if (item.episodeTitle != null)
               Text(
@@ -2334,7 +2475,7 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
     String name = '';
     String imageUrl = '';
     String uniqueId = '';
-    
+
     if (item is JellyfinMediaItem) {
       name = item.name;
       uniqueId = 'jellyfin_${item.id}';
@@ -2352,7 +2493,9 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
         imageUrl = '';
       }
     } else if (item is WatchHistoryItem) {
-      name = item.animeName.isNotEmpty ? item.animeName : (item.episodeTitle ?? '未知动画');
+      name = item.animeName.isNotEmpty
+          ? item.animeName
+          : (item.episodeTitle ?? '未知动画');
       uniqueId = 'history_${item.animeId ?? 0}_${item.filePath.hashCode}';
       imageUrl = item.thumbnailPath ?? '';
     } else if (item is LocalAnimeItem) {
@@ -2365,7 +2508,7 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
     // 基于 maxCrossAxisExtent: 150, childAspectRatio: 7/12
     const double cardWidth = 160;
     const double cardHeight = 200;
-    
+
     return SizedBox(
       width: cardWidth,
       height: cardHeight,
@@ -2382,28 +2525,30 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
 
   Widget _getVideoThumbnail(WatchHistoryItem item) {
     final now = DateTime.now();
-    
+
     // iOS平台特殊处理：检查截图文件的修改时间
     if (Platform.isIOS && item.thumbnailPath != null) {
       final thumbnailFile = File(item.thumbnailPath!);
       if (thumbnailFile.existsSync()) {
         try {
           final fileModified = thumbnailFile.lastModifiedSync();
-          final cacheKey = '${item.filePath}_${fileModified.millisecondsSinceEpoch}';
-          
+          final cacheKey =
+              '${item.filePath}_${fileModified.millisecondsSinceEpoch}';
+
           // 使用包含文件修改时间的缓存key，确保文件更新后缓存失效
           if (_thumbnailCache.containsKey(cacheKey)) {
             final cachedData = _thumbnailCache[cacheKey]!;
             final lastRenderTime = cachedData['time'] as DateTime;
-            
+
             if (now.difference(lastRenderTime).inSeconds < 60) {
               return cachedData['widget'] as Widget;
             }
           }
-          
+
           // 清理旧的缓存条目（相同filePath但不同修改时间）
-          _thumbnailCache.removeWhere((key, value) => key.startsWith('${item.filePath}_'));
-          
+          _thumbnailCache
+              .removeWhere((key, value) => key.startsWith('${item.filePath}_'));
+
           final thumbnailWidget = FutureBuilder<Uint8List>(
             future: thumbnailFile.readAsBytes(),
             builder: (context, snapshot) {
@@ -2416,7 +2561,8 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
               try {
                 return Image.memory(
                   snapshot.data!,
-                  key: ValueKey('${item.filePath}_${fileModified.millisecondsSinceEpoch}'),
+                  key: ValueKey(
+                      '${item.filePath}_${fileModified.millisecondsSinceEpoch}'),
                   fit: BoxFit.cover,
                   width: double.infinity,
                   height: double.infinity,
@@ -2426,25 +2572,22 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
               }
             },
           );
-          
+
           // 使用新的缓存key存储
-          _thumbnailCache[cacheKey] = {
-            'widget': thumbnailWidget,
-            'time': now
-          };
-          
+          _thumbnailCache[cacheKey] = {'widget': thumbnailWidget, 'time': now};
+
           return thumbnailWidget;
         } catch (e) {
           debugPrint('获取截图文件修改时间失败: $e');
         }
       }
     }
-    
+
     // 非iOS平台或获取修改时间失败时的原有逻辑
     if (_thumbnailCache.containsKey(item.filePath)) {
       final cachedData = _thumbnailCache[item.filePath]!;
       final lastRenderTime = cachedData['time'] as DateTime;
-      
+
       if (now.difference(lastRenderTime).inSeconds < 60) {
         return cachedData['widget'] as Widget;
       }
@@ -2473,25 +2616,22 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
             }
           },
         );
-        
+
         // 缓存生成的缩略图和当前时间
         _thumbnailCache[item.filePath] = {
           'widget': thumbnailWidget,
           'time': now
         };
-        
+
         return thumbnailWidget;
       }
     }
 
     final defaultThumbnail = _buildDefaultThumbnail();
-    
+
     // 缓存默认缩略图和当前时间
-    _thumbnailCache[item.filePath] = {
-      'widget': defaultThumbnail,
-      'time': now
-    };
-    
+    _thumbnailCache[item.filePath] = {'widget': defaultThumbnail, 'time': now};
+
     return defaultThumbnail;
   }
 
@@ -2506,7 +2646,7 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
 
   void _onRecommendedItemTap(RecommendedItem item) {
     if (item.source == RecommendedItemSource.placeholder) return;
-    
+
     if (item.source == RecommendedItemSource.jellyfin) {
       _navigateToJellyfinDetail(item.id);
     } else if (item.source == RecommendedItemSource.emby) {
@@ -2519,7 +2659,8 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
           AnimeDetailPage.show(context, animeId).then((result) {
             if (result != null) {
               // 刷新观看历史
-              Provider.of<WatchHistoryProvider>(context, listen: false).refresh();
+              Provider.of<WatchHistoryProvider>(context, listen: false)
+                  .refresh();
               // 🔥 修复Flutter状态错误：使用addPostFrameCallback
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (mounted) {
@@ -2560,13 +2701,14 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
   // 已移除旧的创建本地动画项目的重量级方法，改为快速路径+后台补齐。
 
   void _navigateToJellyfinDetail(String jellyfinId) {
-    MediaServerDetailPage.showJellyfin(context, jellyfinId).then((result) async {
+    MediaServerDetailPage.showJellyfin(context, jellyfinId)
+        .then((result) async {
       if (result != null) {
         // 检查是否需要获取实际播放URL
         String? actualPlayUrl;
         final isJellyfinProtocol = result.filePath.startsWith('jellyfin://');
         final isEmbyProtocol = result.filePath.startsWith('emby://');
-        
+
         if (isJellyfinProtocol) {
           try {
             final jellyfinId = result.filePath.replaceFirst('jellyfin://', '');
@@ -2596,7 +2738,7 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
             return;
           }
         }
-        
+
         // 创建PlayableItem并播放
         final playableItem = PlayableItem(
           videoPath: result.filePath,
@@ -2607,9 +2749,9 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
           historyItem: result,
           actualPlayUrl: actualPlayUrl,
         );
-        
+
         PlaybackService().play(playableItem);
-        
+
         // 刷新观看历史
         Provider.of<WatchHistoryProvider>(context, listen: false).refresh();
       }
@@ -2623,7 +2765,7 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
         String? actualPlayUrl;
         final isJellyfinProtocol = result.filePath.startsWith('jellyfin://');
         final isEmbyProtocol = result.filePath.startsWith('emby://');
-        
+
         if (isJellyfinProtocol) {
           try {
             final jellyfinId = result.filePath.replaceFirst('jellyfin://', '');
@@ -2638,12 +2780,12 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
             BlurSnackBar.show(context, '获取Jellyfin流媒体URL失败: $e');
             return;
           }
-    } else if (isEmbyProtocol) {
+        } else if (isEmbyProtocol) {
           try {
             final embyId = result.filePath.replaceFirst('emby://', '');
             final embyService = EmbyService.instance;
             if (embyService.isConnected) {
-      actualPlayUrl = await embyService.getStreamUrl(embyId);
+              actualPlayUrl = await embyService.getStreamUrl(embyId);
             } else {
               BlurSnackBar.show(context, '未连接到Emby服务器');
               return;
@@ -2653,7 +2795,7 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
             return;
           }
         }
-        
+
         // 创建PlayableItem并播放
         final playableItem = PlayableItem(
           videoPath: result.filePath,
@@ -2664,9 +2806,9 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
           historyItem: result,
           actualPlayUrl: actualPlayUrl,
         );
-        
+
         PlaybackService().play(playableItem);
-        
+
         // 刷新观看历史
         Provider.of<WatchHistoryProvider>(context, listen: false).refresh();
       }
@@ -2675,10 +2817,11 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
 
   void _onWatchHistoryItemTap(WatchHistoryItem item) async {
     // 检查是否为网络URL或流媒体协议URL
-    final isNetworkUrl = item.filePath.startsWith('http://') || item.filePath.startsWith('https://');
+    final isNetworkUrl = item.filePath.startsWith('http://') ||
+        item.filePath.startsWith('https://');
     final isJellyfinProtocol = item.filePath.startsWith('jellyfin://');
     final isEmbyProtocol = item.filePath.startsWith('emby://');
-    
+
     bool fileExists = false;
     String filePath = item.filePath;
     String? actualPlayUrl;
@@ -2700,13 +2843,13 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
           return;
         }
       }
-      
-  if (isEmbyProtocol) {
+
+      if (isEmbyProtocol) {
         try {
           final embyId = item.filePath.replaceFirst('emby://', '');
           final embyService = EmbyService.instance;
           if (embyService.isConnected) {
-    actualPlayUrl = await embyService.getStreamUrl(embyId);
+            actualPlayUrl = await embyService.getStreamUrl(embyId);
           } else {
             BlurSnackBar.show(context, '未连接到Emby服务器');
             return;
@@ -2719,12 +2862,12 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
     } else {
       final videoFile = File(item.filePath);
       fileExists = videoFile.existsSync();
-      
+
       if (!fileExists && Platform.isIOS) {
-        String altPath = filePath.startsWith('/private') 
-            ? filePath.replaceFirst('/private', '') 
+        String altPath = filePath.startsWith('/private')
+            ? filePath.replaceFirst('/private', '')
             : '/private$filePath';
-        
+
         final File altFile = File(altPath);
         if (altFile.existsSync()) {
           filePath = altPath;
@@ -2733,7 +2876,7 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
         }
       }
     }
-    
+
     if (!fileExists) {
       BlurSnackBar.show(context, '文件不存在或无法访问: ${path.basename(item.filePath)}');
       return;
@@ -2755,16 +2898,17 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
   // 导航到媒体库-库管理页面
   void _navigateToMediaLibraryManagement() {
     debugPrint('[DashboardHomePage] 准备导航到媒体库-库管理页面');
-    
+
     // 先发送子标签切换请求，避免Widget销毁后无法访问
     try {
-      final tabChangeNotifier = Provider.of<TabChangeNotifier>(context, listen: false);
+      final tabChangeNotifier =
+          Provider.of<TabChangeNotifier>(context, listen: false);
       tabChangeNotifier.changeToMediaLibrarySubTab(1); // 直接切换到库管理标签
       debugPrint('[DashboardHomePage] 已发送子标签切换请求');
     } catch (e) {
       debugPrint('[DashboardHomePage] 发送子标签切换请求失败: $e');
     }
-    
+
     // 然后切换到媒体库页面
     MainPageState? mainPageState = MainPageState.of(context);
     if (mainPageState != null && mainPageState.globalTabController != null) {
@@ -2776,7 +2920,8 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
         debugPrint('[DashboardHomePage] globalTabController已经在媒体库页面');
         // 如果已经在媒体库页面，立即触发子标签切换
         try {
-          final tabChangeNotifier = Provider.of<TabChangeNotifier>(context, listen: false);
+          final tabChangeNotifier =
+              Provider.of<TabChangeNotifier>(context, listen: false);
           tabChangeNotifier.changeToMediaLibrarySubTab(1);
           debugPrint('[DashboardHomePage] 已在媒体库页面，立即触发子标签切换');
         } catch (e) {
@@ -2787,15 +2932,17 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
       debugPrint('[DashboardHomePage] 无法找到MainPageState或globalTabController');
       // 如果直接访问失败，使用TabChangeNotifier作为备选方案
       try {
-        final tabChangeNotifier = Provider.of<TabChangeNotifier>(context, listen: false);
+        final tabChangeNotifier =
+            Provider.of<TabChangeNotifier>(context, listen: false);
         tabChangeNotifier.changeToMediaLibrarySubTab(1); // 直接切换到媒体库-库管理标签
-        debugPrint('[DashboardHomePage] 备选方案: 使用TabChangeNotifier请求切换到媒体库-库管理标签');
+        debugPrint(
+            '[DashboardHomePage] 备选方案: 使用TabChangeNotifier请求切换到媒体库-库管理标签');
       } catch (e) {
         debugPrint('[DashboardHomePage] TabChangeNotifier也失败: $e');
       }
     }
   }
-  
+
   // 构建页面指示器（分离出来避免不必要的重建），支持点击和悬浮效果
   Widget _buildPageIndicator({bool fullWidth = false, int count = 5}) {
     return Positioned(
@@ -2822,8 +2969,10 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
                 }
 
                 return MouseRegion(
-                  onEnter: (event) => setState(() => _hoveredIndicatorIndex = index),
-                  onExit: (event) => setState(() => _hoveredIndicatorIndex = null),
+                  onEnter: (event) =>
+                      setState(() => _hoveredIndicatorIndex = index),
+                  onExit: (event) =>
+                      setState(() => _hoveredIndicatorIndex = null),
                   cursor: SystemMouseCursors.click,
                   child: GestureDetector(
                     onTap: () {
@@ -2865,9 +3014,9 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
     );
   }
 
-  
   // 获取高清图片的方法
-  Future<String?> _getHighQualityImage(int animeId, BangumiAnime animeDetail) async {
+  Future<String?> _getHighQualityImage(
+      int animeId, BangumiAnime animeDetail) async {
     try {
       // 优先尝试本地缓存中的 bangumiId/bangumiUrl，避免再请求弹弹play
       try {
@@ -2880,13 +3029,17 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
           final bangumi = data['bangumi'] as Map<String, dynamic>?;
           String? cachedBangumiId;
           // 1) 直接字段
-          if (bangumi != null && bangumi['bangumiId'] != null && bangumi['bangumiId'].toString().isNotEmpty) {
+          if (bangumi != null &&
+              bangumi['bangumiId'] != null &&
+              bangumi['bangumiId'].toString().isNotEmpty) {
             cachedBangumiId = bangumi['bangumiId'].toString();
           }
           // 2) 从 bangumiUrl 解析
           if (cachedBangumiId == null) {
-            final String? bangumiUrl = (bangumi?['bangumiUrl'] as String?) ?? (animeData?['bangumiUrl'] as String?);
-            if (bangumiUrl != null && bangumiUrl.contains('bangumi.tv/subject/')) {
+            final String? bangumiUrl = (bangumi?['bangumiUrl'] as String?) ??
+                (animeData?['bangumiUrl'] as String?);
+            if (bangumiUrl != null &&
+                bangumiUrl.contains('bangumi.tv/subject/')) {
               final RegExp regex = RegExp(r'bangumi\.tv/subject/(\d+)');
               final match = regex.firstMatch(bangumiUrl);
               if (match != null) {
@@ -2895,7 +3048,8 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
             }
           }
           if (cachedBangumiId != null && cachedBangumiId.isNotEmpty) {
-            final bangumiImageUrl = await _getBangumiHighQualityImage(cachedBangumiId);
+            final bangumiImageUrl =
+                await _getBangumiHighQualityImage(cachedBangumiId);
             if (bangumiImageUrl != null && bangumiImageUrl.isNotEmpty) {
               debugPrint('从缓存的Bangumi信息获取到高清图片: $bangumiImageUrl');
               return bangumiImageUrl;
@@ -2906,7 +3060,7 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
 
       // 首先尝试从弹弹play获取bangumi ID
       String? bangumiId = await _getBangumiIdFromDandanplay(animeId);
-      
+
       if (bangumiId != null && bangumiId.isNotEmpty) {
         // 如果获取到bangumi ID，尝试从Bangumi API获取高清图片
         final bangumiImageUrl = await _getBangumiHighQualityImage(bangumiId);
@@ -2915,14 +3069,14 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
           return bangumiImageUrl;
         }
       }
-      
+
       // 如果Bangumi API失败，回退到弹弹play的图片
       if (animeDetail.imageUrl.isNotEmpty) {
         debugPrint('回退到弹弹play图片: ${animeDetail.imageUrl}');
         return animeDetail.imageUrl;
       }
-      
-  debugPrint('未能获取到任何图片 (animeId: $animeId)');
+
+      debugPrint('未能获取到任何图片 (animeId: $animeId)');
       return null;
     } catch (e) {
       debugPrint('获取高清图片失败 (animeId: $animeId): $e');
@@ -2930,16 +3084,17 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
       return animeDetail.imageUrl;
     }
   }
-  
+
   // 从弹弹play API获取bangumi ID
   Future<String?> _getBangumiIdFromDandanplay(int animeId) async {
     try {
       // 使用弹弹play的番剧详情API获取bangumi ID
-      final Map<String, dynamic> result = await DandanplayService.getBangumiDetails(animeId);
-      
+      final Map<String, dynamic> result =
+          await DandanplayService.getBangumiDetails(animeId);
+
       if (result['success'] == true && result['bangumi'] != null) {
         final bangumi = result['bangumi'] as Map<String, dynamic>;
-        
+
         // 检查是否有bangumiUrl，从中提取ID
         final String? bangumiUrl = bangumi['bangumiUrl'] as String?;
         if (bangumiUrl != null && bangumiUrl.contains('bangumi.tv/subject/')) {
@@ -2952,7 +3107,7 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
             return bangumiId;
           }
         }
-        
+
         // 也检查是否直接有bangumiId字段
         final dynamic directBangumiId = bangumi['bangumiId'];
         if (directBangumiId != null) {
@@ -2963,7 +3118,7 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
           }
         }
       }
-      
+
       debugPrint('弹弹play未返回有效的bangumi ID (animeId: $animeId)');
       return null;
     } catch (e) {
@@ -2971,23 +3126,24 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
       return null;
     }
   }
-  
+
   // 从Bangumi API获取高清图片
   Future<String?> _getBangumiHighQualityImage(String bangumiId) async {
     try {
       // 使用Bangumi API的图片接口获取large尺寸的图片
       // GET /v0/subjects/{subject_id}/image?type=large
-      final String imageApiUrl = 'https://api.bgm.tv/v0/subjects/$bangumiId/image?type=large';
-      
+      final String imageApiUrl =
+          'https://api.bgm.tv/v0/subjects/$bangumiId/image?type=large';
+
       debugPrint('请求Bangumi图片API: $imageApiUrl');
-      
+
       final response = await http.head(
         Uri.parse(imageApiUrl),
         headers: {
           'User-Agent': 'NipaPlay/1.0',
         },
       ).timeout(const Duration(seconds: 5));
-      
+
       if (response.statusCode == 302) {
         // Bangumi API返回302重定向到实际图片URL
         final String? location = response.headers['location'];
@@ -2999,7 +3155,7 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
         // 有些情况下可能直接返回200
         return imageApiUrl;
       }
-      
+
       debugPrint('Bangumi图片API响应异常: ${response.statusCode}');
       return null;
     } catch (e) {
@@ -3009,24 +3165,25 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
   }
 
   // 升级为高清图片（后台异步处理）
-  Future<void> _upgradeToHighQualityImages(List<dynamic> candidates, List<RecommendedItem> currentItems) async {
+  Future<void> _upgradeToHighQualityImages(
+      List<dynamic> candidates, List<RecommendedItem> currentItems) async {
     debugPrint('开始后台升级为高清图片...');
-    
+
     if (candidates.isEmpty || currentItems.isEmpty) {
       debugPrint('无候选项目或当前项目，跳过高清图片升级');
       return;
     }
-    
+
     // 为每个候选项目升级图片
     final upgradeFutures = <Future<void>>[];
-    
+
     for (int i = 0; i < candidates.length && i < currentItems.length; i++) {
       final candidate = candidates[i];
       final currentItem = currentItems[i];
-      
+
       upgradeFutures.add(_upgradeItemToHighQuality(candidate, currentItem, i));
     }
-    
+
     // 异步处理所有升级，不阻塞UI
     Future.wait(upgradeFutures, eagerError: false).then((_) {
       debugPrint('所有推荐图片升级完成');
@@ -3034,29 +3191,32 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
       debugPrint('升级推荐图片时发生错误: $e');
     });
   }
-  
+
   // 升级单个项目为高清图片
-  Future<void> _upgradeItemToHighQuality(dynamic candidate, RecommendedItem currentItem, int index) async {
+  Future<void> _upgradeItemToHighQuality(
+      dynamic candidate, RecommendedItem currentItem, int index) async {
     try {
       RecommendedItem? upgradedItem;
-      
+
       if (candidate is JellyfinMediaItem) {
         // Jellyfin项目 - 获取高清图片和详细信息
         final jellyfinService = JellyfinService.instance;
-        
+
         // 并行获取背景图片、Logo图片和详细信息
         final results = await Future.wait([
-          _tryGetJellyfinImage(jellyfinService, candidate.id, ['Backdrop', 'Primary', 'Art', 'Banner']),
-          _tryGetJellyfinImage(jellyfinService, candidate.id, ['Logo', 'Thumb']),
+          _tryGetJellyfinImage(jellyfinService, candidate.id,
+              ['Backdrop', 'Primary', 'Art', 'Banner']),
+          _tryGetJellyfinImage(
+              jellyfinService, candidate.id, ['Logo', 'Thumb']),
           _getJellyfinItemSubtitle(jellyfinService, candidate),
         ]);
-        
+
         final backdropUrl = results[0];
         final logoUrl = results[1];
         final subtitle = results[2];
-        
+
         // 如果获取到了更好的图片或信息，创建升级版本
-        if (backdropUrl != currentItem.backgroundImageUrl || 
+        if (backdropUrl != currentItem.backgroundImageUrl ||
             logoUrl != currentItem.logoImageUrl ||
             subtitle != currentItem.subtitle) {
           upgradedItem = RecommendedItem(
@@ -3069,24 +3229,24 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
             rating: currentItem.rating,
           );
         }
-        
       } else if (candidate is EmbyMediaItem) {
         // Emby项目 - 获取高清图片和详细信息
         final embyService = EmbyService.instance;
-        
+
         // 并行获取背景图片、Logo图片和详细信息
         final results = await Future.wait([
-          _tryGetEmbyImage(embyService, candidate.id, ['Backdrop', 'Primary', 'Art', 'Banner']),
+          _tryGetEmbyImage(embyService, candidate.id,
+              ['Backdrop', 'Primary', 'Art', 'Banner']),
           _tryGetEmbyImage(embyService, candidate.id, ['Logo', 'Thumb']),
           _getEmbyItemSubtitle(embyService, candidate),
         ]);
-        
+
         final backdropUrl = results[0];
         final logoUrl = results[1];
         final subtitle = results[2];
-        
+
         // 如果获取到了更好的图片或信息，创建升级版本
-        if (backdropUrl != currentItem.backgroundImageUrl || 
+        if (backdropUrl != currentItem.backgroundImageUrl ||
             logoUrl != currentItem.logoImageUrl ||
             subtitle != currentItem.subtitle) {
           upgradedItem = RecommendedItem(
@@ -3099,26 +3259,29 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
             rating: currentItem.rating,
           );
         }
-        
       } else if (candidate is WatchHistoryItem) {
         // 本地媒体库项目 - 获取高清图片和详细信息
         String? highQualityImageUrl;
         String? detailedSubtitle;
-        
+
         if (candidate.animeId != null) {
           try {
             // 先尝试使用持久化缓存，避免重复请求网络
             final prefs = await SharedPreferences.getInstance();
-            final persisted = prefs.getString('$_localPrefsKeyPrefix${candidate.animeId!}');
+            final persisted =
+                prefs.getString('$_localPrefsKeyPrefix${candidate.animeId!}');
 
-            final persistedLooksHQ = persisted != null && persisted.isNotEmpty && _looksHighQualityUrl(persisted);
+            final persistedLooksHQ = persisted != null &&
+                persisted.isNotEmpty &&
+                _looksHighQualityUrl(persisted);
 
             if (persistedLooksHQ) {
               highQualityImageUrl = persisted;
             } else {
               // 获取详细信息和高清图片
               final bangumiService = BangumiService.instance;
-              final animeDetail = await bangumiService.getAnimeDetails(candidate.animeId!);
+              final animeDetail =
+                  await bangumiService.getAnimeDetails(candidate.animeId!);
               detailedSubtitle = animeDetail.summary?.isNotEmpty == true
                   ? animeDetail.summary!
                       .replaceAll('<br>', ' ')
@@ -3126,15 +3289,19 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
                       .replaceAll('<br />', ' ')
                       .replaceAll('```', '')
                   : null;
-              
+
               // 获取高清图片
-              highQualityImageUrl = await _getHighQualityImage(candidate.animeId!, animeDetail);
+              highQualityImageUrl =
+                  await _getHighQualityImage(candidate.animeId!, animeDetail);
 
               // 将获取到的高清图持久化，避免后续重复请求
-              if (highQualityImageUrl != null && highQualityImageUrl.isNotEmpty) {
+              if (highQualityImageUrl != null &&
+                  highQualityImageUrl.isNotEmpty) {
                 _localImageCache[candidate.animeId!] = highQualityImageUrl;
                 try {
-                  await prefs.setString('$_localPrefsKeyPrefix${candidate.animeId!}', highQualityImageUrl);
+                  await prefs.setString(
+                      '$_localPrefsKeyPrefix${candidate.animeId!}',
+                      highQualityImageUrl);
                 } catch (_) {}
               } else if (persisted != null && persisted.isNotEmpty) {
                 // 如果没拿到更好的，只能继续沿用已持久化的（即使它可能是 medium），避免空图
@@ -3145,7 +3312,7 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
             debugPrint('获取本地媒体高清信息失败 (animeId: ${candidate.animeId}): $e');
           }
         }
-        
+
         // 如果获取到了更好的图片或信息，创建升级版本
         if (highQualityImageUrl != currentItem.backgroundImageUrl ||
             detailedSubtitle != currentItem.subtitle) {
@@ -3153,14 +3320,15 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
             id: currentItem.id,
             title: currentItem.title,
             subtitle: detailedSubtitle ?? currentItem.subtitle,
-            backgroundImageUrl: highQualityImageUrl ?? currentItem.backgroundImageUrl,
+            backgroundImageUrl:
+                highQualityImageUrl ?? currentItem.backgroundImageUrl,
             logoImageUrl: currentItem.logoImageUrl,
             source: currentItem.source,
             rating: currentItem.rating,
           );
         }
       }
-      
+
       // 如果有升级版本，更新UI
       if (upgradedItem != null && mounted) {
         setState(() {
@@ -3168,12 +3336,11 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
             _recommendedItems[index] = upgradedItem!;
           }
         });
-        
+
         // CachedNetworkImageWidget 会自动处理图片预加载和缓存
-        
+
         debugPrint('项目 ${upgradedItem.title} 已升级为高清版本');
       }
-      
     } catch (e) {
       debugPrint('升级项目 $index 为高清版本失败: $e');
     }
@@ -3182,7 +3349,9 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
   // 经验性判断一个图片URL是否"看起来"是高清图
   bool _looksHighQualityUrl(String url) {
     final lower = url.toLowerCase();
-    if (lower.contains('bgm.tv') || lower.contains('type=large') || lower.contains('original')) {
+    if (lower.contains('bgm.tv') ||
+        lower.contains('type=large') ||
+        lower.contains('original')) {
       return true;
     }
     if (lower.contains('medium') || lower.contains('small')) {
@@ -3197,19 +3366,19 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
     // 否则未知，默认当作高清，避免不必要的重复网络请求
     return true;
   }
-  
-
 
   // 已移除老的图片下载缓存函数，现在使用 CachedNetworkImageWidget 的内置缓存系统
 
   // 辅助方法：尝试获取Jellyfin图片 - 带验证与回退，按优先级返回第一个有效URL
-  Future<String?> _tryGetJellyfinImage(JellyfinService service, String itemId, List<String> imageTypes) async {
+  Future<String?> _tryGetJellyfinImage(
+      JellyfinService service, String itemId, List<String> imageTypes) async {
     // 先构建候选URL列表
     final List<MapEntry<String, String>> candidates = [];
     for (final imageType in imageTypes) {
       try {
         final url = imageType == 'Backdrop'
-            ? service.getImageUrl(itemId, type: imageType, width: 1920, height: 1080, quality: 95)
+            ? service.getImageUrl(itemId,
+                type: imageType, width: 1920, height: 1080, quality: 95)
             : service.getImageUrl(itemId, type: imageType);
         if (url.isNotEmpty) {
           candidates.add(MapEntry(imageType, url));
@@ -3234,7 +3403,8 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
     for (final t in imageTypes) {
       for (final res in validations) {
         if (res != null && res.key == t) {
-          debugPrint('Jellyfin获取到${t}有效图片: ${res.value.substring(0, math.min(100, res.value.length))}...');
+          debugPrint(
+              'Jellyfin获取到${t}有效图片: ${res.value.substring(0, math.min(100, res.value.length))}...');
           return res.value;
         }
       }
@@ -3245,12 +3415,14 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
   }
 
   // 辅助方法：尝试获取Emby图片 - 带验证与回退，按优先级返回第一个有效URL
-  Future<String?> _tryGetEmbyImage(EmbyService service, String itemId, List<String> imageTypes) async {
+  Future<String?> _tryGetEmbyImage(
+      EmbyService service, String itemId, List<String> imageTypes) async {
     final List<MapEntry<String, String>> candidates = [];
     for (final imageType in imageTypes) {
       try {
         final url = imageType == 'Backdrop'
-            ? service.getImageUrl(itemId, type: imageType, width: 1920, height: 1080, quality: 95)
+            ? service.getImageUrl(itemId,
+                type: imageType, width: 1920, height: 1080, quality: 95)
             : service.getImageUrl(itemId, type: imageType);
         if (url.isNotEmpty) {
           candidates.add(MapEntry(imageType, url));
@@ -3273,7 +3445,8 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
     for (final t in imageTypes) {
       for (final res in validations) {
         if (res != null && res.key == t) {
-          debugPrint('Emby获取到${t}有效图片: ${res.value.substring(0, math.min(100, res.value.length))}...');
+          debugPrint(
+              'Emby获取到${t}有效图片: ${res.value.substring(0, math.min(100, res.value.length))}...');
           return res.value;
         }
       }
@@ -3287,13 +3460,15 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
   Future<bool> _validateImageUrl(String url) async {
     try {
       final response = await http.head(Uri.parse(url)).timeout(
-        const Duration(seconds: 2),
-        onTimeout: () => throw TimeoutException('图片验证超时', const Duration(seconds: 2)),
-      );
+            const Duration(seconds: 2),
+            onTimeout: () =>
+                throw TimeoutException('图片验证超时', const Duration(seconds: 2)),
+          );
 
       if (response.statusCode != 200) return false;
       final contentType = response.headers['content-type'];
-      if (contentType == null || !contentType.startsWith('image/')) return false;
+      if (contentType == null || !contentType.startsWith('image/'))
+        return false;
 
       final contentLength = response.headers['content-length'];
       if (contentLength != null) {
@@ -3307,41 +3482,49 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
   }
 
   // 辅助方法：获取Jellyfin项目简介
-  Future<String> _getJellyfinItemSubtitle(JellyfinService service, JellyfinMediaItem item) async {
+  Future<String> _getJellyfinItemSubtitle(
+      JellyfinService service, JellyfinMediaItem item) async {
     try {
       final detail = await service.getMediaItemDetails(item.id);
-      return detail.overview?.isNotEmpty == true ? detail.overview!
-          .replaceAll('<br>', ' ')
-          .replaceAll('<br/>', ' ')
-          .replaceAll('<br />', ' ') : '暂无简介信息';
+      return detail.overview?.isNotEmpty == true
+          ? detail.overview!
+              .replaceAll('<br>', ' ')
+              .replaceAll('<br/>', ' ')
+              .replaceAll('<br />', ' ')
+          : '暂无简介信息';
     } catch (e) {
       debugPrint('获取Jellyfin详细信息失败: $e');
-      return item.overview?.isNotEmpty == true ? item.overview!
-          .replaceAll('<br>', ' ')
-          .replaceAll('<br/>', ' ')
-          .replaceAll('<br />', ' ') : '暂无简介信息';
+      return item.overview?.isNotEmpty == true
+          ? item.overview!
+              .replaceAll('<br>', ' ')
+              .replaceAll('<br/>', ' ')
+              .replaceAll('<br />', ' ')
+          : '暂无简介信息';
     }
   }
 
   // 辅助方法：获取Emby项目简介
-  Future<String> _getEmbyItemSubtitle(EmbyService service, EmbyMediaItem item) async {
+  Future<String> _getEmbyItemSubtitle(
+      EmbyService service, EmbyMediaItem item) async {
     try {
       final detail = await service.getMediaItemDetails(item.id);
-      return detail.overview?.isNotEmpty == true ? detail.overview!
-          .replaceAll('<br>', ' ')
-          .replaceAll('<br/>', ' ')
-          .replaceAll('<br />', ' ') : '暂无简介信息';
+      return detail.overview?.isNotEmpty == true
+          ? detail.overview!
+              .replaceAll('<br>', ' ')
+              .replaceAll('<br/>', ' ')
+              .replaceAll('<br />', ' ')
+          : '暂无简介信息';
     } catch (e) {
       debugPrint('获取Emby详细信息失败: $e');
-      return item.overview?.isNotEmpty == true ? item.overview!
-          .replaceAll('<br>', ' ')
-          .replaceAll('<br/>', ' ')
-          .replaceAll('<br />', ' ') : '暂无简介信息';
+      return item.overview?.isNotEmpty == true
+          ? item.overview!
+              .replaceAll('<br>', ' ')
+              .replaceAll('<br/>', ' ')
+              .replaceAll('<br />', ' ')
+          : '暂无简介信息';
     }
   }
 
-
-  
   // 构建滚动按钮
   Widget _buildScrollButtons(ScrollController controller, double itemWidth) {
     return Padding(
@@ -3352,10 +3535,13 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
           AnimatedBuilder(
             animation: controller,
             builder: (context, child) {
-              final canScrollLeft = controller.hasClients && controller.offset > 0;
+              final canScrollLeft =
+                  controller.hasClients && controller.offset > 0;
               return _buildScrollButton(
                 icon: Icons.chevron_left,
-                onTap: canScrollLeft ? () => _scrollToPrevious(controller, itemWidth) : null,
+                onTap: canScrollLeft
+                    ? () => _scrollToPrevious(controller, itemWidth)
+                    : null,
                 enabled: canScrollLeft,
               );
             },
@@ -3364,11 +3550,13 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
           AnimatedBuilder(
             animation: controller,
             builder: (context, child) {
-              final canScrollRight = controller.hasClients && 
+              final canScrollRight = controller.hasClients &&
                   controller.offset < controller.position.maxScrollExtent;
               return _buildScrollButton(
                 icon: Icons.chevron_right,
-                onTap: canScrollRight ? () => _scrollToNext(controller, itemWidth) : null,
+                onTap: canScrollRight
+                    ? () => _scrollToNext(controller, itemWidth)
+                    : null,
                 enabled: canScrollRight,
               );
             },
@@ -3377,7 +3565,7 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
       ),
     );
   }
-  
+
   // 构建单个滚动按钮
   Widget _buildScrollButton({
     required IconData icon,
@@ -3387,12 +3575,22 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
     return ClipRRect(
       borderRadius: BorderRadius.circular(8),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: context.watch<AppearanceSettingsProvider>().enableWidgetBlurEffect ? 25 : 0, sigmaY: context.watch<AppearanceSettingsProvider>().enableWidgetBlurEffect ? 25 : 0),
+        filter: ImageFilter.blur(
+            sigmaX: context
+                    .watch<AppearanceSettingsProvider>()
+                    .enableWidgetBlurEffect
+                ? 25
+                : 0,
+            sigmaY: context
+                    .watch<AppearanceSettingsProvider>()
+                    .enableWidgetBlurEffect
+                ? 25
+                : 0),
         child: Container(
           width: 32,
           height: 32,
           decoration: BoxDecoration(
-            color: enabled 
+            color: enabled
                 ? Colors.white.withOpacity(0.2)
                 : Colors.white.withOpacity(0.1),
             borderRadius: BorderRadius.circular(8),
@@ -3411,9 +3609,7 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
               child: Center(
                 child: Icon(
                   icon,
-                  color: enabled 
-                      ? Colors.white
-                      : Colors.white.withOpacity(0.5),
+                  color: enabled ? Colors.white : Colors.white.withOpacity(0.5),
                   size: 18,
                 ),
               ),
@@ -3423,36 +3619,37 @@ style: TextStyle(color: Colors.white54, fontSize: 16),
       ),
     );
   }
-  
+
   // 滚动到上一页
   void _scrollToPrevious(ScrollController controller, double itemWidth) {
     final screenWidth = MediaQuery.of(context).size.width;
     final visibleWidth = screenWidth - 32; // 减去左右边距
     final itemsPerPage = (visibleWidth / itemWidth).floor();
     final scrollDistance = itemsPerPage * itemWidth;
-    
+
     final targetOffset = math.max(0.0, controller.offset - scrollDistance);
-    
+
     controller.animateTo(
       targetOffset,
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
     );
   }
-  
+
   // 滚动到下一页
   void _scrollToNext(ScrollController controller, double itemWidth) {
     final screenWidth = MediaQuery.of(context).size.width;
     final visibleWidth = screenWidth - 32; // 减去左右边距
     final itemsPerPage = (visibleWidth / itemWidth).floor();
     final scrollDistance = itemsPerPage * itemWidth;
-    
+
     final targetOffset = controller.offset + scrollDistance;
     final maxScrollExtent = controller.position.maxScrollExtent;
-    
+
     // 如果目标位置超过了最大滚动范围，就滚动到最大位置
-    final finalTargetOffset = targetOffset > maxScrollExtent ? maxScrollExtent : targetOffset;
-    
+    final finalTargetOffset =
+        targetOffset > maxScrollExtent ? maxScrollExtent : targetOffset;
+
     controller.animateTo(
       finalTargetOffset,
       duration: const Duration(milliseconds: 300),

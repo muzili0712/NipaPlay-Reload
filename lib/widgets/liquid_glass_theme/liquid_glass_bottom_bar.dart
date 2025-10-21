@@ -227,48 +227,49 @@ class _BottomBarTab extends StatelessWidget {
                 child: Stack(
                   clipBehavior: Clip.none,
                   children: [
-                    if (tab.glowColor != null)
-                      Positioned(
-                        top: -24,
-                        right: -24,
-                        left: -24,
-                        bottom: -24,
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 300),
-                          transformAlignment: Alignment.center,
-                          curve: Curves.easeOutCirc,
-                          transform: selected
-                              ? Matrix4.identity()
-                              : (Matrix4.identity()
-                                ..scale(0.4)
-                                ..rotateZ(-math.pi)),
-                          child: TweenAnimationBuilder<double>(
-                            tween: Tween<double>(
-                              begin: 0,
-                              end: selected ? 1 : 0,
-                            ),
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeOutCirc,
-                            builder: (context, value, child) {
-                              return Container(
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: _scaleAlpha(
-                                        tab.glowColor!,
-                                        value * 0.6,
-                                      ),
-                                      blurRadius: 32,
-                                      spreadRadius: 8,
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ),
+                    // 移除发光效果 - 注释掉整个 glow 部分
+                    // if (tab.glowColor != null)
+                    //   Positioned(
+                    //     top: -24,
+                    //     right: -24,
+                    //     left: -24,
+                    //     bottom: -24,
+                    //     child: AnimatedContainer(
+                    //       duration: const Duration(milliseconds: 300),
+                    //       transformAlignment: Alignment.center,
+                    //       curve: Curves.easeOutCirc,
+                    //       transform: selected
+                    //           ? Matrix4.identity()
+                    //           : (Matrix4.identity()
+                    //             ..scale(0.4)
+                    //             ..rotateZ(-math.pi)),
+                    //       child: TweenAnimationBuilder<double>(
+                    //         tween: Tween<double>(
+                    //           begin: 0,
+                    //           end: selected ? 1 : 0,
+                    //         ),
+                    //         duration: const Duration(milliseconds: 300),
+                    //         curve: Curves.easeOutCirc,
+                    //         builder: (context, value, child) {
+                    //           return Container(
+                    //             decoration: BoxDecoration(
+                    //               shape: BoxShape.circle,
+                    //               boxShadow: [
+                    //                 BoxShadow(
+                    //                   color: _scaleAlpha(
+                    //                     tab.glowColor!,
+                    //                     value * 0.6,
+                    //                   ),
+                    //                   blurRadius: 32,
+                    //                   spreadRadius: 8,
+                    //                 ),
+                    //               ],
+                    //             ),
+                    //           );
+                    //         },
+                    //       ),
+                    //     ),
+                    //   ),
                     AnimatedScale(
                       scale: 1,
                       duration: const Duration(milliseconds: 150),
