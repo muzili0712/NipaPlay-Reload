@@ -1501,7 +1501,7 @@ class _DashboardHomePageState extends State<DashboardHomePage>
                 children: [
                   // 液态玻璃主题下的推荐内容标题
                   if (uiThemeProvider.isLiquidGlassTheme) ...[
-                    const SizedBox(height: 28), // 上方留白
+                    const SizedBox(height: 26), // 上方留白
                     Padding(
                       padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
                       child: Text(
