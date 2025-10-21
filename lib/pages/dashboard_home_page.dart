@@ -30,6 +30,7 @@ import 'package:nipaplay/models/playable_item.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:path/path.dart' as path;
 import 'package:nipaplay/providers/appearance_settings_provider.dart';
+import 'package:nipaplay/providers/ui_theme_provider.dart';
 import 'package:nipaplay/utils/video_player_state.dart';
 import 'package:nipaplay/utils/tab_change_notifier.dart';
 import 'package:nipaplay/main.dart'; // 用于MainPageState
@@ -1490,14 +1491,30 @@ class _DashboardHomePageState extends State<DashboardHomePage>
       enabled: tickerEnabled,
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        body: Consumer2<JellyfinProvider, EmbyProvider>(
-          builder: (context, jellyfinProvider, embyProvider, child) {
+        body: Consumer3<JellyfinProvider, EmbyProvider, UIThemeProvider>(
+          builder: (context, jellyfinProvider, embyProvider, uiThemeProvider, child) {
             return SingleChildScrollView(
               controller: _mainScrollController,
               physics: const AlwaysScrollableScrollPhysics(),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // 液态玻璃主题下的推荐内容标题
+                  if (uiThemeProvider.isLiquidGlassTheme) ...[
+                    const SizedBox(height: 28), // 上方留白
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                      child: Text(
+                        '主页',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ),
+                  ],
                   // 大海报推荐区域
                   _buildHeroBanner(isPhone: isPhone),
 

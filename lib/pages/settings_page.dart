@@ -19,6 +19,7 @@ import 'package:nipaplay/pages/settings/ui_theme_page.dart'; // 导入UI主题�
 import 'package:nipaplay/pages/settings/watch_history_page.dart';
 import 'package:nipaplay/pages/settings/backup_restore_page.dart';
 import 'package:nipaplay/pages/settings/network_settings_page.dart';
+import 'package:nipaplay/providers/ui_theme_provider.dart';
 import 'package:provider/provider.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -90,12 +91,18 @@ class _SettingsPageState extends State<SettingsPage>
 
   @override
   Widget build(BuildContext context) {
-    // ResponsiveContainer 会根据 isDesktop 决定是否显示 currentPage
-    return ResponsiveContainer(
-      currentPage: currentPage ?? Container(), // 将当前页面状态传递给 ResponsiveContainer
-      // child 是 ListView，始终显示
-      child: ListView(
-        children: [
+    return Consumer<UIThemeProvider>(
+      builder: (context, uiThemeProvider, child) {
+        // ResponsiveContainer 会根据 isDesktop 决定是否显示 currentPage
+        return ResponsiveContainer(
+          currentPage: currentPage ?? Container(), // 将当前页面状态传递给 ResponsiveContainer
+          // child 是 ListView，始终显示
+          child: ListView(
+            children: [
+              // 液态玻璃主题下的上方留白
+              if (uiThemeProvider.isLiquidGlassTheme) ...[
+                const SizedBox(height: 24),
+              ],
           ListTile(
             title: const Text("账号",
                 locale: Locale("zh-Hans", "zh"),
@@ -255,6 +262,8 @@ class _SettingsPageState extends State<SettingsPage>
           ),
         ],
       ),
+    );
+      },
     );
   }
 }

@@ -6,6 +6,7 @@ import 'package:nipaplay/widgets/liquid_glass_theme/liquid_glass_bottom_bar.dart
 import 'package:nipaplay/widgets/nipaplay_theme/background_with_blur.dart';
 import 'package:nipaplay/widgets/nipaplay_theme/custom_scaffold.dart';
 import 'package:nipaplay/widgets/nipaplay_theme/switchable_view.dart';
+import 'package:nipaplay/utils/video_player_state.dart';
 import 'package:provider/provider.dart';
 
 class LiquidGlassScaffold extends StatefulWidget {
@@ -106,90 +107,114 @@ class _LiquidGlassScaffoldState extends State<LiquidGlassScaffold> {
       return const Center(child: Text('TabController 未初始化'));
     }
 
-    final appearanceSettings = Provider.of<AppearanceSettingsProvider>(context);
-    final enableAnimation = appearanceSettings.enablePageAnimation;
+    return Consumer2<AppearanceSettingsProvider, VideoPlayerState>(
+      builder: (context, appearanceSettings, videoPlayerState, child) {
+        final enableAnimation = appearanceSettings.enablePageAnimation;
 
-    final brightness = Theme.of(context).brightness;
-    final cupertinoTheme = CupertinoThemeData(
-      brightness:
-          brightness == Brightness.dark ? Brightness.dark : Brightness.light,
-      primaryColor: CupertinoColors.activeBlue,
-      barBackgroundColor: brightness == Brightness.dark
-          ? CupertinoColors.black.withOpacity(0.2)
-          : CupertinoColors.extraLightBackgroundGray.withOpacity(0.2),
-    );
+        final brightness = Theme.of(context).brightness;
+        final cupertinoTheme = CupertinoThemeData(
+          brightness:
+              brightness == Brightness.dark ? Brightness.dark : Brightness.light,
+          primaryColor: CupertinoColors.activeBlue,
+          barBackgroundColor: brightness == Brightness.dark
+              ? CupertinoColors.black.withOpacity(0.2)
+              : CupertinoColors.extraLightBackgroundGray.withOpacity(0.2),
+        );
 
-    final bottomBarTabs = widget.tabs;
+        final bottomBarTabs = widget.tabs;
+        
+        // 检查是否应该显示导航栏（视频播放时隐藏）
+        final shouldShowNavigation = widget.showNavigation && videoPlayerState.shouldShowAppBar();
 
     return Stack(
       children: [
-        // 背景层
-        const BackgroundWithBlur(
-          child: SizedBox.expand(),
-        ),
-        // 添加夜间模式遮罩层，覆盖整个屏幕包括状态栏
-        if (brightness == Brightness.dark)
-          Positioned.fill(
-            child: Container(
-              color: Colors.black.withOpacity(0.6),
-            ),
+        // 背景层 - 视频播放时隐藏
+        if (shouldShowNavigation) ...[
+          const BackgroundWithBlur(
+            child: SizedBox.expand(),
           ),
+          // 添加夜间模式遮罩层，覆盖整个屏幕包括状态栏
+          if (brightness == Brightness.dark)
+            Positioned.fill(
+              child: Container(
+                color: Colors.black.withOpacity(0.6),
+              ),
+            ),
+        ],
         // 主内容
         Scaffold(
           backgroundColor: Colors.transparent,
           extendBody: true,
           body: Stack(
             children: [
-              // 主内容区域 - 包含标题和页面内容
-              SafeArea(
-                bottom: false,
-                child: Column(
-                  children: [
-                    // 苹果风格大标题导航栏
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.only(
-                        left: 20,
-                        right: 20,
-                        top: 40,
-                        bottom: 24,
-                      ),
-                      child: Text(
-                        bottomBarTabs[_currentIndex.clamp(
-                                0, bottomBarTabs.length - 1)]
-                            .label,
-                        style: const TextStyle(
-                          fontSize: 36,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          letterSpacing: 0.4,
-                          height: 1.2,
+              // 主内容区域 - 根据视频播放状态决定是否使用SafeArea
+              shouldShowNavigation 
+                ? SafeArea(
+                    bottom: false,
+                    child: Column(
+                      children: [
+                        // 苹果风格大标题导航栏 - 已取消
+                        // Container(
+                        //   width: double.infinity,
+                        //   padding: const EdgeInsets.only(
+                        //     left: 20,
+                        //     right: 20,
+                        //     top: 40,
+                        //     bottom: 24,
+                        //   ),
+                        //   child: Text(
+                        //     bottomBarTabs[_currentIndex.clamp(
+                        //             0, bottomBarTabs.length - 1)]
+                        //         .label,
+                        //     style: const TextStyle(
+                        //       fontSize: 36,
+                        //       fontWeight: FontWeight.bold,
+                        //       color: Colors.white,
+                        //       letterSpacing: 0.4,
+                        //       height: 1.2,
+                        //     ),
+                        //   ),
+                        // ),
+                        Expanded(
+                          child: TabControllerScope(
+                            controller: controller,
+                            enabled: true,
+                            child: SwitchableView(
+                              controller: controller,
+                              enableAnimation: enableAnimation,
+                              currentIndex: controller.index,
+                              physics: enableAnimation
+                                  ? const PageScrollPhysics()
+                                  : const NeverScrollableScrollPhysics(),
+                              onPageChanged: _handlePageChanged,
+                              children: widget.pages
+                                  .map((page) => RepaintBoundary(child: page))
+                                  .toList(),
+                            ),
+                          ),
                         ),
-                      ),
+                      ],
                     ),
-                    Expanded(
-                      child: TabControllerScope(
-                        controller: controller,
-                        enabled: true,
-                        child: SwitchableView(
-                          controller: controller,
-                          enableAnimation: enableAnimation,
-                          currentIndex: controller.index,
-                          physics: enableAnimation
-                              ? const PageScrollPhysics()
-                              : const NeverScrollableScrollPhysics(),
-                          onPageChanged: _handlePageChanged,
-                          children: widget.pages
-                              .map((page) => RepaintBoundary(child: page))
-                              .toList(),
-                        ),
-                      ),
+                  )
+                : // 视频播放时：无SafeArea，全屏显示
+                  TabControllerScope(
+                    controller: controller,
+                    enabled: true,
+                    child: SwitchableView(
+                      controller: controller,
+                      enableAnimation: enableAnimation,
+                      currentIndex: controller.index,
+                      physics: enableAnimation
+                          ? const PageScrollPhysics()
+                          : const NeverScrollableScrollPhysics(),
+                      onPageChanged: _handlePageChanged,
+                      children: widget.pages
+                          .map((page) => RepaintBoundary(child: page))
+                          .toList(),
                     ),
-                  ],
-                ),
-              ),
+                  ),
               // 底部导航栏 - 更贴近底部
-              if (widget.showNavigation)
+              if (shouldShowNavigation)
                 Positioned(
                   left: 12,
                   right: 12,
@@ -210,6 +235,8 @@ class _LiquidGlassScaffoldState extends State<LiquidGlassScaffold> {
           ),
         ),
       ],
+    );
+      },
     );
   }
 }
