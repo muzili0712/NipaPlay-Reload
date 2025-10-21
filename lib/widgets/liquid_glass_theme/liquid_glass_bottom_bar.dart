@@ -131,28 +131,26 @@ class _LiquidGlassBottomBarState extends State<LiquidGlassBottomBar> {
                 tabCount: widget.tabs.length,
                 indicatorColor: widget.indicatorColor,
                 onTabChanged: widget.onTabSelected,
-                child: LiquidStretch(
-                  child: LiquidGlass.inLayer(
-                    clipBehavior: Clip.none,
-                    shape: const LiquidRoundedSuperellipse(
-                      borderRadius: Radius.circular(32),
-                    ),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      height: widget.barHeight,
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          for (var i = 0; i < widget.tabs.length; i++)
-                            Expanded(
-                              child: _BottomBarTab(
-                                tab: widget.tabs[i],
-                                selected: widget.selectedIndex == i,
-                                onTap: () => widget.onTabSelected(i),
-                              ),
+                child: LiquidGlass.inLayer(
+                  clipBehavior: Clip.none,
+                  shape: const LiquidRoundedSuperellipse(
+                    borderRadius: Radius.circular(32),
+                  ),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    height: widget.barHeight,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        for (var i = 0; i < widget.tabs.length; i++)
+                          Expanded(
+                            child: _BottomBarTab(
+                              tab: widget.tabs[i],
+                              selected: widget.selectedIndex == i,
+                              onTap: () => widget.onTabSelected(i),
                             ),
-                        ],
-                      ),
+                          ),
+                      ],
                     ),
                   ),
                 ),

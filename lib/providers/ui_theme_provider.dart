@@ -23,6 +23,22 @@ class UIThemeProvider extends ChangeNotifier {
   bool get isFluentUITheme => _currentTheme == UIThemeType.fluentUI;
   bool get isLiquidGlassTheme => _currentTheme == UIThemeType.liquidGlass;
 
+  /// 获取当前平台允许的主题列表
+  List<UIThemeType> get availableThemes {
+    if (_isIOSPlatform() || _isAndroidPlatform()) {
+      // iOS 和 Android 只允许默认主题和液态玻璃
+      return [UIThemeType.nipaplay, UIThemeType.liquidGlass];
+    } else {
+      // 桌面平台允许所有主题
+      return UIThemeType.values;
+    }
+  }
+
+  /// 检查指定主题是否可用
+  bool isThemeAvailable(UIThemeType theme) {
+    return availableThemes.contains(theme);
+  }
+
   UIThemeProvider() {
     _loadTheme();
   }
@@ -42,10 +58,12 @@ class UIThemeProvider extends ChangeNotifier {
         await prefs.setInt(_key, _currentTheme.index);
       }
 
-      if (_shouldForceLiquidGlassTheme() &&
+      // iOS 和 Android 限制只能是默认或液态玻璃
+      if ((_isIOSPlatform() || _isAndroidPlatform()) &&
+          _currentTheme != UIThemeType.nipaplay &&
           _currentTheme != UIThemeType.liquidGlass) {
-        _currentTheme = UIThemeType.liquidGlass;
-        await prefs.setInt(_key, UIThemeType.liquidGlass.index);
+        _currentTheme = _defaultThemeForPlatform();
+        await prefs.setInt(_key, _currentTheme.index);
       } else if (!hasStoredTheme && _currentTheme != UIThemeType.nipaplay) {
         await prefs.setInt(_key, _currentTheme.index);
       }
@@ -63,8 +81,11 @@ class UIThemeProvider extends ChangeNotifier {
   }
 
   Future<void> setTheme(UIThemeType theme) async {
-    if (_shouldForceLiquidGlassTheme() && theme != UIThemeType.liquidGlass) {
-      return;
+    // iOS 和 Android 只允许在默认主题和液态玻璃之间切换
+    if (_isIOSPlatform() || _isAndroidPlatform()) {
+      if (theme != UIThemeType.nipaplay && theme != UIThemeType.liquidGlass) {
+        return;
+      }
     }
 
     if (_currentTheme != theme) {
@@ -106,23 +127,25 @@ class UIThemeProvider extends ChangeNotifier {
   }
 
   UIThemeType _defaultThemeForPlatform() {
-    if (_shouldForceLiquidGlassTheme()) {
+    // iOS 默认液态玻璃，Android 默认 NipaPlay
+    if (_isIOSPlatform()) {
       return UIThemeType.liquidGlass;
     }
     return UIThemeType.nipaplay;
   }
 
-  bool _shouldForceLiquidGlassTheme() {
+  bool _isIOSPlatform() {
     if (kIsWeb) {
       return false;
     }
-    switch (defaultTargetPlatform) {
-      case TargetPlatform.iOS:
-      case TargetPlatform.android:
-        return true;
-      default:
-        return false;
+    return defaultTargetPlatform == TargetPlatform.iOS;
+  }
+
+  bool _isAndroidPlatform() {
+    if (kIsWeb) {
+      return false;
     }
+    return defaultTargetPlatform == TargetPlatform.android;
   }
 
   ThemeMode _themeModeFromString(String value) {

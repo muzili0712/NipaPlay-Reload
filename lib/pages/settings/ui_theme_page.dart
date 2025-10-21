@@ -69,6 +69,9 @@ class _UIThemePageState extends State<UIThemePage> {
   }
 
   Widget _buildThemeSelector(UIThemeProvider uiThemeProvider) {
+    // 获取当前平台可用的主题列表
+    final availableThemes = uiThemeProvider.availableThemes;
+
     return Row(
       children: [
         const Text(
@@ -84,7 +87,7 @@ class _UIThemePageState extends State<UIThemePage> {
         Expanded(
           child: BlurDropdown<UIThemeType>(
             dropdownKey: _themeDropdownKey,
-            items: UIThemeType.values.map((theme) {
+            items: availableThemes.map((theme) {
               return DropdownMenuItemData<UIThemeType>(
                 title: uiThemeProvider.getThemeName(theme),
                 value: theme,

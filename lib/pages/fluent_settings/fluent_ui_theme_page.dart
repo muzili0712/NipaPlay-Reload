@@ -54,7 +54,8 @@ class _FluentUIThemePageState extends State<FluentUIThemePage> {
                               alignment: Alignment.centerLeft,
                               child: ComboBox<UIThemeType>(
                                 value: uiThemeProvider.currentTheme,
-                                items: UIThemeType.values.map((theme) {
+                                items: uiThemeProvider.availableThemes
+                                    .map((theme) {
                                   return ComboBoxItem<UIThemeType>(
                                     value: theme,
                                     child: Text(

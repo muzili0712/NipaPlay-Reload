@@ -98,8 +98,8 @@ class _SettingsPageState extends State<SettingsPage>
         children: [
           ListTile(
             title: const Text("账号",
-                locale:Locale("zh-Hans","zh"),
-style: TextStyle(
+                locale: Locale("zh-Hans", "zh"),
+                style: TextStyle(
                     color: Colors.white, fontWeight: FontWeight.bold)),
             trailing: const Icon(Ionicons.chevron_forward_outline,
                 color: Colors.white),
@@ -109,8 +109,8 @@ style: TextStyle(
           ),
           ListTile(
             title: const Text("外观",
-                locale:Locale("zh-Hans","zh"),
-style: TextStyle(
+                locale: Locale("zh-Hans", "zh"),
+                style: TextStyle(
                     color: Colors.white, fontWeight: FontWeight.bold)),
             trailing: const Icon(Ionicons.chevron_forward_outline,
                 color: Colors.white),
@@ -124,22 +124,21 @@ style: TextStyle(
                   );
             },
           ),
-          if (!globals.isPhone)
-            ListTile(
-              title: const Text("主题（实验性）",
-                  locale:Locale("zh-Hans","zh"),
-style: TextStyle(
-                      color: Colors.white, fontWeight: FontWeight.bold)),
-              trailing: const Icon(Ionicons.chevron_forward_outline,
-                  color: Colors.white),
-              onTap: () {
-                _handleItemTap(const UIThemePage(), "主题设置");
-              },
-            ),
+          ListTile(
+            title: const Text("主题",
+                locale: Locale("zh-Hans", "zh"),
+                style: TextStyle(
+                    color: Colors.white, fontWeight: FontWeight.bold)),
+            trailing: const Icon(Ionicons.chevron_forward_outline,
+                color: Colors.white),
+            onTap: () {
+              _handleItemTap(const UIThemePage(), "主题设置");
+            },
+          ),
           ListTile(
             title: const Text("通用",
-                locale:Locale("zh-Hans","zh"),
-style: TextStyle(
+                locale: Locale("zh-Hans", "zh"),
+                style: TextStyle(
                     color: Colors.white, fontWeight: FontWeight.bold)),
             trailing: const Icon(Ionicons.chevron_forward_outline,
                 color: Colors.white),
@@ -149,8 +148,8 @@ style: TextStyle(
           ),
           ListTile(
             title: const Text("网络",
-                locale:Locale("zh-Hans","zh"),
-style: TextStyle(
+                locale: Locale("zh-Hans", "zh"),
+                style: TextStyle(
                     color: Colors.white, fontWeight: FontWeight.bold)),
             trailing: const Icon(Ionicons.chevron_forward_outline,
                 color: Colors.white),
@@ -160,8 +159,8 @@ style: TextStyle(
           ),
           ListTile(
             title: const Text("观看记录",
-                locale:Locale("zh-Hans","zh"),
-style: TextStyle(
+                locale: Locale("zh-Hans", "zh"),
+                style: TextStyle(
                     color: Colors.white, fontWeight: FontWeight.bold)),
             trailing: const Icon(Ionicons.chevron_forward_outline,
                 color: Colors.white),
@@ -172,8 +171,8 @@ style: TextStyle(
           if (!globals.isPhone)
             ListTile(
               title: const Text("备份与恢复",
-                  locale:Locale("zh-Hans","zh"),
-style: TextStyle(
+                  locale: Locale("zh-Hans", "zh"),
+                  style: TextStyle(
                       color: Colors.white, fontWeight: FontWeight.bold)),
               trailing: const Icon(Ionicons.chevron_forward_outline,
                   color: Colors.white),
@@ -183,8 +182,8 @@ style: TextStyle(
             ),
           ListTile(
             title: const Text("播放器",
-                locale:Locale("zh-Hans","zh"),
-style: TextStyle(
+                locale: Locale("zh-Hans", "zh"),
+                style: TextStyle(
                     color: Colors.white, fontWeight: FontWeight.bold)),
             trailing: const Icon(Ionicons.chevron_forward_outline,
                 color: Colors.white),
@@ -195,8 +194,8 @@ style: TextStyle(
           if (!globals.isPhone)
             ListTile(
               title: const Text("快捷键",
-                  locale:Locale("zh-Hans","zh"),
-style: TextStyle(
+                  locale: Locale("zh-Hans", "zh"),
+                  style: TextStyle(
                       color: Colors.white, fontWeight: FontWeight.bold)),
               trailing: const Icon(Ionicons.chevron_forward_outline,
                   color: Colors.white),
@@ -207,8 +206,8 @@ style: TextStyle(
           if (!globals.isPhone)
             ListTile(
               title: const Text("远程访问（实验性）",
-                  locale:Locale("zh-Hans","zh"),
-style: TextStyle(
+                  locale: Locale("zh-Hans", "zh"),
+                  style: TextStyle(
                       color: Colors.white, fontWeight: FontWeight.bold)),
               trailing: const Icon(Ionicons.chevron_forward_outline,
                   color: Colors.white),
@@ -218,8 +217,8 @@ style: TextStyle(
             ),
           ListTile(
             title: const Text("远程媒体库",
-                locale:Locale("zh-Hans","zh"),
-style: TextStyle(
+                locale: Locale("zh-Hans", "zh"),
+                style: TextStyle(
                     color: Colors.white, fontWeight: FontWeight.bold)),
             trailing: const Icon(Ionicons.chevron_forward_outline,
                 color: Colors.white),
@@ -230,8 +229,8 @@ style: TextStyle(
           // 开发者选项
           ListTile(
             title: const Text("开发者选项",
-                locale:Locale("zh-Hans","zh"),
-style: TextStyle(
+                locale: Locale("zh-Hans", "zh"),
+                style: TextStyle(
                     color: Colors.white, fontWeight: FontWeight.bold)),
             trailing: const Icon(Ionicons.chevron_forward_outline,
                 color: Colors.white),
@@ -241,8 +240,8 @@ style: TextStyle(
           ),
           ListTile(
             title: const Text("关于",
-                locale:Locale("zh-Hans","zh"),
-style: TextStyle(
+                locale: Locale("zh-Hans", "zh"),
+                style: TextStyle(
                     color: Colors.white, fontWeight: FontWeight.bold)),
             trailing: const Icon(Ionicons.chevron_forward_outline,
                 color: Colors.white),

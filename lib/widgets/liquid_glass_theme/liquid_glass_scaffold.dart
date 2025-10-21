@@ -121,55 +121,91 @@ class _LiquidGlassScaffoldState extends State<LiquidGlassScaffold> {
 
     final bottomBarTabs = widget.tabs;
 
-    return BackgroundWithBlur(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        extendBody: true,
-        body: SafeArea(
-          bottom: false,
-          child: Column(
-            children: [
-              Expanded(
-                child: TabControllerScope(
-                  controller: controller,
-                  enabled: true,
-                  child: SwitchableView(
-                    controller: controller,
-                    enableAnimation: enableAnimation,
-                    currentIndex: controller.index,
-                    physics: enableAnimation
-                        ? const PageScrollPhysics()
-                        : const NeverScrollableScrollPhysics(),
-                    onPageChanged: _handlePageChanged,
-                    children: widget.pages
-                        .map((page) => RepaintBoundary(child: page))
-                        .toList(),
+    return Stack(
+      children: [
+        // 背景层
+        const BackgroundWithBlur(
+          child: SizedBox.expand(),
+        ),
+        // 添加夜间模式遮罩层，覆盖整个屏幕包括状态栏
+        if (brightness == Brightness.dark)
+          Positioned.fill(
+            child: Container(
+              color: Colors.black.withOpacity(0.6),
+            ),
+          ),
+        // 主内容
+        Scaffold(
+          backgroundColor: Colors.transparent,
+          extendBody: true,
+          body: SafeArea(
+            bottom: false,
+            child: Column(
+              children: [
+                // 苹果风格大标题导航栏
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.only(
+                    left: 20,
+                    right: 20,
+                    top: 12,
+                    bottom: 12,
                   ),
-                ),
-              ),
-              if (widget.showNavigation)
-                SafeArea(
-                  top: false,
-                  minimum: EdgeInsets.only(
-                    left: _isCupertinoPlatform ? 0 : 16,
-                    right: _isCupertinoPlatform ? 0 : 16,
-                    bottom: _isCupertinoPlatform ? 12 : 16,
-                  ),
-                  child: CupertinoTheme(
-                    data: cupertinoTheme,
-                    child: LiquidGlassBottomBar(
-                      tabs: bottomBarTabs,
-                      selectedIndex:
-                          _currentIndex.clamp(0, bottomBarTabs.length - 1),
-                      onTabSelected: _onBottomTabSelected,
-                      showIndicator: true,
+                  child: Text(
+                    bottomBarTabs[
+                            _currentIndex.clamp(0, bottomBarTabs.length - 1)]
+                        .label,
+                    style: const TextStyle(
+                      fontSize: 34,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      letterSpacing: 0.36,
+                      height: 1.2,
                     ),
                   ),
                 ),
-            ],
+                Expanded(
+                  child: TabControllerScope(
+                    controller: controller,
+                    enabled: true,
+                    child: SwitchableView(
+                      controller: controller,
+                      enableAnimation: enableAnimation,
+                      currentIndex: controller.index,
+                      physics: enableAnimation
+                          ? const PageScrollPhysics()
+                          : const NeverScrollableScrollPhysics(),
+                      onPageChanged: _handlePageChanged,
+                      children: widget.pages
+                          .map((page) => RepaintBoundary(child: page))
+                          .toList(),
+                    ),
+                  ),
+                ),
+                if (widget.showNavigation)
+                  SafeArea(
+                    top: false,
+                    minimum: EdgeInsets.only(
+                      left: _isCupertinoPlatform ? 0 : 16,
+                      right: _isCupertinoPlatform ? 0 : 16,
+                      bottom: _isCupertinoPlatform ? 12 : 16,
+                    ),
+                    child: CupertinoTheme(
+                      data: cupertinoTheme,
+                      child: LiquidGlassBottomBar(
+                        tabs: bottomBarTabs,
+                        selectedIndex:
+                            _currentIndex.clamp(0, bottomBarTabs.length - 1),
+                        onTabSelected: _onBottomTabSelected,
+                        showIndicator: true,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
-      ),
+      ],
     );
   }
 }
