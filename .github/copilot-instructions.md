@@ -184,3 +184,6 @@ See `CONTRIBUTING_GUIDE/` for comprehensive developer docs:
 - Service pattern: `lib/services/jellyfin_service.dart` (singleton + multi-address)
 - Provider setup: `lib/providers/service_provider.dart`
 - Build scripts: `build-arm64.sh`, `build_and_copy_web.sh`
+
+
+flutter analyze的时候只看error，不看warning，而且只显示这些

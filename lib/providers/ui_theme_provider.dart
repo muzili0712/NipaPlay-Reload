@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 enum UIThemeType {
   nipaplay,
   fluentUI,
+  liquidGlass,
 }
 
 class UIThemeProvider extends ChangeNotifier {
@@ -20,6 +21,7 @@ class UIThemeProvider extends ChangeNotifier {
 
   bool get isNipaplayTheme => _currentTheme == UIThemeType.nipaplay;
   bool get isFluentUITheme => _currentTheme == UIThemeType.fluentUI;
+  bool get isLiquidGlassTheme => _currentTheme == UIThemeType.liquidGlass;
 
   UIThemeProvider() {
     _loadTheme();
@@ -28,9 +30,24 @@ class UIThemeProvider extends ChangeNotifier {
   Future<void> _loadTheme() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final themeIndex = prefs.getInt(_key) ?? 0;
-      if (themeIndex >= 0 && themeIndex < UIThemeType.values.length) {
-        _currentTheme = UIThemeType.values[themeIndex];
+      final bool hasStoredTheme = prefs.containsKey(_key);
+      final storedIndex = prefs.getInt(_key);
+
+      if (storedIndex != null &&
+          storedIndex >= 0 &&
+          storedIndex < UIThemeType.values.length) {
+        _currentTheme = UIThemeType.values[storedIndex];
+      } else {
+        _currentTheme = _defaultThemeForPlatform();
+        await prefs.setInt(_key, _currentTheme.index);
+      }
+
+      if (_shouldForceLiquidGlassTheme() &&
+          _currentTheme != UIThemeType.liquidGlass) {
+        _currentTheme = UIThemeType.liquidGlass;
+        await prefs.setInt(_key, UIThemeType.liquidGlass.index);
+      } else if (!hasStoredTheme && _currentTheme != UIThemeType.nipaplay) {
+        await prefs.setInt(_key, _currentTheme.index);
       }
 
       final storedMode = prefs.getString(_fluentThemeModeKey);
@@ -46,10 +63,14 @@ class UIThemeProvider extends ChangeNotifier {
   }
 
   Future<void> setTheme(UIThemeType theme) async {
+    if (_shouldForceLiquidGlassTheme() && theme != UIThemeType.liquidGlass) {
+      return;
+    }
+
     if (_currentTheme != theme) {
       _currentTheme = theme;
       notifyListeners();
-      
+
       try {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setInt(_key, theme.index);
@@ -79,6 +100,28 @@ class UIThemeProvider extends ChangeNotifier {
         return 'NipaPlay';
       case UIThemeType.fluentUI:
         return 'Fluent UI';
+      case UIThemeType.liquidGlass:
+        return 'Liquid Glass';
+    }
+  }
+
+  UIThemeType _defaultThemeForPlatform() {
+    if (_shouldForceLiquidGlassTheme()) {
+      return UIThemeType.liquidGlass;
+    }
+    return UIThemeType.nipaplay;
+  }
+
+  bool _shouldForceLiquidGlassTheme() {
+    if (kIsWeb) {
+      return false;
+    }
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.iOS:
+      case TargetPlatform.android:
+        return true;
+      default:
+        return false;
     }
   }
 

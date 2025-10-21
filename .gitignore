@@ -40,3 +40,5 @@ docs/error.txt
 # 忽略 VSCode 的设置文件
 .vscode/settings.json
 *.xcscheme
+
+example/

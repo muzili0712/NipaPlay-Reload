@@ -45,7 +45,6 @@ class _FluentUIThemePageState extends State<FluentUIThemePage> {
                           style: FluentTheme.of(context).typography.caption,
                         ),
                         const SizedBox(height: 16),
-                        
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -58,12 +57,15 @@ class _FluentUIThemePageState extends State<FluentUIThemePage> {
                                 items: UIThemeType.values.map((theme) {
                                   return ComboBoxItem<UIThemeType>(
                                     value: theme,
-                                    child: Text(uiThemeProvider.getThemeName(theme)),
+                                    child: Text(
+                                        uiThemeProvider.getThemeName(theme)),
                                   );
                                 }).toList(),
                                 onChanged: (value) {
-                                  if (value != null && uiThemeProvider.currentTheme != value) {
-                                    _showThemeChangeConfirmDialog(value, uiThemeProvider);
+                                  if (value != null &&
+                                      uiThemeProvider.currentTheme != value) {
+                                    _showThemeChangeConfirmDialog(
+                                        value, uiThemeProvider);
                                   }
                                 },
                               ),
@@ -74,9 +76,9 @@ class _FluentUIThemePageState extends State<FluentUIThemePage> {
                     ),
                   ),
                 ),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // 主题预览卡片
                 Card(
                   child: Padding(
@@ -94,9 +96,9 @@ class _FluentUIThemePageState extends State<FluentUIThemePage> {
                     ),
                   ),
                 ),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // 说明信息
                 InfoBar(
                   title: const Text('说明'),
@@ -158,7 +160,7 @@ class _FluentUIThemePageState extends State<FluentUIThemePage> {
             const Text('• 磨砂玻璃效果\n• 渐变色彩\n• 圆角设计\n• 动态模糊'),
           ],
         );
-        
+
       case UIThemeType.fluentUI:
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -204,18 +206,70 @@ class _FluentUIThemePageState extends State<FluentUIThemePage> {
             const Text('• 亚克力材质\n• 统一的导航\n• 现代化控件\n• 桌面端优化'),
           ],
         );
+      case UIThemeType.liquidGlass:
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      gradient: const LinearGradient(
+                        colors: [
+                          material.Color(0x662871F1),
+                          material.Color(0x6620C1FF),
+                        ],
+                      ),
+                    ),
+                    child: const Icon(
+                      FluentIcons.brush,
+                      color: material.Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Liquid Glass 主题'),
+                      SizedBox(height: 4),
+                      Text('苹果原生液态玻璃风格导航体验'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              '特色功能：',
+              style: FluentTheme.of(context).typography.caption,
+            ),
+            const SizedBox(height: 8),
+            const Text('• 底部液态玻璃导航栏\n• 原生 Cupertino 动效\n• 自适应色彩\n• 移动端优先体验'),
+          ],
+        );
     }
   }
 
   /// 显示主题切换确认弹窗
-  void _showThemeChangeConfirmDialog(UIThemeType newTheme, UIThemeProvider provider) {
+  void _showThemeChangeConfirmDialog(
+      UIThemeType newTheme, UIThemeProvider provider) {
     showDialog<void>(
       context: context,
       barrierDismissible: true,
       builder: (context) {
         return ContentDialog(
           title: const Text('主题切换提示'),
-          content: Text('切换到 ${provider.getThemeName(newTheme)} 主题需要重启应用才能完全生效。\n\n是否要立即重启应用？'),
+          content: Text(
+              '切换到 ${provider.getThemeName(newTheme)} 主题需要重启应用才能完全生效。\n\n是否要立即重启应用？'),
           actions: [
             Button(
               onPressed: () {
@@ -256,6 +310,4 @@ class _FluentUIThemePageState extends State<FluentUIThemePage> {
       );
     }
   }
-
-
 }
