@@ -153,28 +153,28 @@ class _LiquidMediaLibraryPageState extends State<LiquidMediaLibraryPage> {
     }
 
     if (animeSummaries.isEmpty) {
-      slivers.add(
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(
-              pagePadding.left,
-              sectionSpacing,
-              pagePadding.right,
-              pagePadding.bottom,
-            ),
-            child: _buildHostListRow(
-              icon: CupertinoIcons.info,
-              iconColor: _secondaryTextColor,
-              text:
-                  provider.activeHost == null ? '请选择一个共享客户端' : '该共享客户端暂无已同步番剧',
-              textColor: _secondaryTextColor,
-              onTap: provider.activeHost == null
-                  ? () => _showHostDialog(provider)
-                  : null,
+      final bool hasActiveHost = provider.activeHost != null;
+      if (hasActiveHost) {
+        slivers.add(
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(
+                pagePadding.left,
+                sectionSpacing,
+                pagePadding.right,
+                pagePadding.bottom,
+              ),
+              child: _buildHostListRow(
+                icon: CupertinoIcons.info,
+                iconColor: _secondaryTextColor,
+                text: '该共享客户端暂无已同步番剧',
+                textColor: _secondaryTextColor,
+                onTap: null,
+              ),
             ),
           ),
-        ),
-      );
+        );
+      }
       slivers.add(
         SliverToBoxAdapter(child: SizedBox(height: footerSpacing)),
       );
