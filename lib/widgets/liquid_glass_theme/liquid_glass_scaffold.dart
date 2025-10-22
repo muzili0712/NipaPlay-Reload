@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:nipaplay/providers/appearance_settings_provider.dart';
 import 'package:nipaplay/widgets/liquid_glass_theme/liquid_glass_bottom_bar.dart';
-import 'package:nipaplay/widgets/nipaplay_theme/background_with_blur.dart';
 import 'package:nipaplay/widgets/nipaplay_theme/custom_scaffold.dart';
 import 'package:nipaplay/widgets/nipaplay_theme/switchable_view.dart';
 import 'package:nipaplay/utils/video_player_state.dart';
@@ -191,21 +190,19 @@ class _LiquidGlassScaffoldState extends State<LiquidGlassScaffold> {
           });
         }
 
+        final backgroundColor =
+            brightness == Brightness.dark ? Colors.black : Colors.white;
+
         return Stack(
           children: [
             // 背景层 - 视频播放时隐藏
-            if (shouldShowNavigation) ...[
-              const BackgroundWithBlur(
-                child: SizedBox.expand(),
-              ),
-              // 添加夜间模式遮罩层，覆盖整个屏幕包括状态栏
-              if (brightness == Brightness.dark)
-                Positioned.fill(
-                  child: Container(
-                    color: Colors.black.withOpacity(0.6),
-                  ),
+            if (shouldShowNavigation)
+              Positioned.fill(
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 220),
+                  color: backgroundColor,
                 ),
-            ],
+              ),
             // 主内容
             Scaffold(
               backgroundColor: Colors.transparent,

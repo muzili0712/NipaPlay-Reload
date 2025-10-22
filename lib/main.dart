@@ -17,6 +17,7 @@ import 'pages/settings_page.dart';
 import 'pages/play_video_page.dart';
 import 'pages/new_series_page.dart';
 import 'pages/dashboard_home_page.dart';
+import 'pages/liquid_glass/liquid_dashboard_home_page.dart';
 import 'utils/settings_storage.dart';
 import 'package:nipaplay/utils/video_player_state.dart';
 import 'services/bangumi_service.dart';
@@ -1252,8 +1253,13 @@ class MainPageState extends State<MainPage>
             return Consumer<UIThemeProvider>(
               builder: (context, uiThemeProvider, child) {
                 if (uiThemeProvider.isLiquidGlassTheme) {
+                  final liquidPages = <Widget>[
+                    const LiquidDashboardHomePage(),
+                    ...widget.pages.skip(1),
+                  ];
+
                   return LiquidGlassScaffold(
-                    pages: widget.pages,
+                    pages: liquidPages,
                     tabController: globalTabController,
                     tabs: createLiquidGlassTabs(),
                     showNavigation: shouldShowAppBar,
