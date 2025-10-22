@@ -190,8 +190,9 @@ class _LiquidGlassScaffoldState extends State<LiquidGlassScaffold> {
           });
         }
 
-        final backgroundColor =
-            brightness == Brightness.dark ? Colors.black : Colors.white;
+        final backgroundColor = brightness == Brightness.dark
+            ? const Color(0xFF0F0F12)
+            : const Color(0xFFF2F2F7);
 
         return Stack(
           children: [

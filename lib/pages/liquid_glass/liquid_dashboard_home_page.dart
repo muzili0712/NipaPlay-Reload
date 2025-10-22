@@ -1486,11 +1486,14 @@ class _LiquidDashboardHomePageState extends State<LiquidDashboardHomePage>
     final bool tickerEnabled = !_isVideoPlayerActive();
     final bool isPhone = MediaQuery.of(context).size.shortestSide < 600;
     final brightness = Theme.of(context).brightness;
+    final containerColor = brightness == Brightness.dark
+        ? const Color(0xFF0F0F12)
+        : const Color(0xFFF2F2F7);
 
     return TickerMode(
       enabled: tickerEnabled,
       child: Container(
-        color: brightness == Brightness.dark ? Colors.black : Colors.white,
+        color: containerColor,
         child: Scaffold(
           backgroundColor: Colors.transparent,
           body: Consumer2<JellyfinProvider, EmbyProvider>(
@@ -4311,28 +4314,27 @@ class _LiquidDashboardHomePageState extends State<LiquidDashboardHomePage>
   Color _liquidTextColor(double opacity) =>
       _liquidPrimaryTextColor.withOpacity(opacity.clamp(0, 1));
 
-  Color get _liquidGlassTintColor =>
-      _liquidIsDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.08);
+  Color get _liquidGlassTintColor => Colors.white.withOpacity(0.92);
 
   Color get _liquidGlassBorderColor =>
-      _liquidIsDark ? Colors.white.withOpacity(0.12) : Colors.black.withOpacity(0.1);
+      _liquidIsDark ? Colors.white.withOpacity(0.28) : Colors.white.withOpacity(0.18);
 
   Color get _liquidQuickActionBackground =>
-      _liquidIsDark ? Colors.white.withOpacity(0.12) : Colors.black.withOpacity(0.06);
+      _liquidIsDark ? const Color(0xFF1E1E22) : const Color(0xFFE6E7ED);
 
   Color get _liquidProgressBackground =>
       _liquidIsDark ? Colors.white24 : Colors.black.withOpacity(0.12);
 
   Color get _liquidHeroGradientStart =>
-      _liquidIsDark ? Colors.black.withOpacity(0.65) : Colors.white.withOpacity(0.9);
+      _liquidIsDark ? Colors.black.withOpacity(0.65) : Colors.white.withOpacity(0.92);
 
   Color get _liquidHeroGradientEnd =>
-      _liquidIsDark ? Colors.black.withOpacity(0.1) : Colors.white.withOpacity(0.35);
+      _liquidIsDark ? Colors.black.withOpacity(0.18) : Colors.white.withOpacity(0.4);
 
   LinearGradient get _liquidPlaceholderGradient => LinearGradient(
         colors: _liquidIsDark
             ? const [Color(0xFF1F1F2E), Color(0xFF2A2A3F)]
-            : const [Color(0xFFEFEFF5), Color(0xFFE2E5F0)],
+            : const [Color(0xFFE8E9F1), Color(0xFFD9DBE4)],
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
       );
