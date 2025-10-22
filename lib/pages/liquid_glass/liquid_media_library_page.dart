@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:nipaplay/models/shared_remote_library.dart';
 import 'package:nipaplay/pages/media_library_page.dart';
 import 'package:nipaplay/providers/shared_remote_library_provider.dart';
+import 'package:nipaplay/widgets/liquid_glass_theme/liquid_section_card.dart';
 import 'package:nipaplay/widgets/nipaplay_theme/blur_login_dialog.dart';
 import 'package:nipaplay/widgets/nipaplay_theme/blur_snackbar.dart';
 import 'package:nipaplay/widgets/nipaplay_theme/cached_network_image_widget.dart';
@@ -32,20 +33,16 @@ class _LiquidMediaLibraryPageState extends State<LiquidMediaLibraryPage> {
 
   @override
   Widget build(BuildContext context) {
-    final backgroundColor = _surfaceBackground;
-
     return CupertinoPageScaffold(
-      backgroundColor: backgroundColor,
+      backgroundColor: _surfaceBackground,
       child: SafeArea(
         top: false,
         bottom: false,
         child: Consumer<SharedRemoteLibraryProvider>(
           builder: (context, provider, child) {
             if (provider.isInitializing) {
-              return Center(
-                child: CupertinoActivityIndicator(
-                  color: _primaryTextColor,
-                ),
+              return const Center(
+                child: CupertinoActivityIndicator(),
               );
             }
 
@@ -58,7 +55,7 @@ class _LiquidMediaLibraryPageState extends State<LiquidMediaLibraryPage> {
                 CupertinoSliverRefreshControl(
                   onRefresh: () => _refreshLibrary(provider, userInitiated: true),
                 ),
-                ..._buildSlivers(context, provider),
+                ..._buildSlivers(provider),
               ],
             );
           },
@@ -67,121 +64,128 @@ class _LiquidMediaLibraryPageState extends State<LiquidMediaLibraryPage> {
     );
   }
 
-  List<Widget> _buildSlivers(
-    BuildContext context,
-    SharedRemoteLibraryProvider provider,
-  ) {
+  List<Widget> _buildSlivers(SharedRemoteLibraryProvider provider) {
     final hasHosts = provider.hosts.isNotEmpty;
     final animeSummaries = provider.animeSummaries;
 
-    final slivers = <Widget>[
+    final cards = <Widget>[
       SliverToBoxAdapter(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 28, 20, 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '媒体库',
-                style: TextStyle(
-                  color: _primaryTextColor,
-                  fontSize: 34,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.4,
+          child: buildLiquidSectionCard(
+            context: context,
+            brightnessOverride: _brightness,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '媒体库',
+                  style: TextStyle(
+                    color: _primaryTextColor,
+                    fontSize: 32,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.4,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                '连接 NipaPlay 共享客户端，远程访问家中的番剧资源',
-                style: TextStyle(
-                  color: _secondaryTextColor,
-                  fontSize: 14,
+                const SizedBox(height: 10),
+                Text(
+                  '连接 NipaPlay 共享客户端，远程访问家中的番剧资源',
+                  style: TextStyle(
+                    color: _secondaryTextColor,
+                    fontSize: 14,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 24),
-              _buildHostCard(context, provider),
-            ],
+                const SizedBox(height: 24),
+                _buildHostSection(provider),
+              ],
+            ),
           ),
         ),
       ),
     ];
 
     if (provider.errorMessage != null) {
-      slivers.add(
+      cards.add(
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-            child: _buildErrorCard(provider),
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+            child: buildLiquidSectionCard(
+              context: context,
+              brightnessOverride: _brightness,
+              padding: const EdgeInsets.all(18),
+              child: _buildErrorChip(provider),
+            ),
           ),
         ),
       );
     }
 
     if (!hasHosts) {
-      slivers.add(
+      cards.add(
         SliverFillRemaining(
           hasScrollBody: false,
           child: Center(
-            child: _buildEmptyHostsPlaceholder(context),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 40),
+              child: buildLiquidSectionCard(
+                context: context,
+                brightnessOverride: _brightness,
+                child: _buildEmptyHostsPlaceholder(),
+              ),
+            ),
           ),
         ),
       );
-      return slivers;
+      return cards;
     }
 
     if (provider.isLoading && animeSummaries.isEmpty) {
-      slivers.add(
+      cards.add(
         const SliverFillRemaining(
           hasScrollBody: false,
-          child: Center(
-            child: CupertinoActivityIndicator(),
-          ),
+          child: Center(child: CupertinoActivityIndicator()),
         ),
       );
-      return slivers;
+      return cards;
     }
 
     if (animeSummaries.isEmpty) {
-      slivers.add(
+      cards.add(
         SliverFillRemaining(
           hasScrollBody: false,
           child: Center(
-            child: _buildEmptyLibraryPlaceholder(provider.activeHost),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 40),
+              child: buildLiquidSectionCard(
+                context: context,
+                brightnessOverride: _brightness,
+                child: _buildEmptyLibraryPlaceholder(provider.activeHost),
+              ),
+            ),
           ),
         ),
       );
-      return slivers;
+      return cards;
     }
 
-    slivers.add(
+    cards.add(
       SliverPadding(
-        padding: const EdgeInsets.fromLTRB(20, 0, 20, 40),
-        sliver: SliverGrid(
-          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-            maxCrossAxisExtent: 190,
-            mainAxisSpacing: 18,
-            crossAxisSpacing: 18,
-            childAspectRatio: 7 / 11,
-          ),
-          delegate: SliverChildBuilderDelegate(
-            (context, index) => _buildAnimeCard(
-              context,
-              provider,
-              animeSummaries[index],
-            ),
-            childCount: animeSummaries.length,
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
+        sliver: SliverToBoxAdapter(
+          child: buildLiquidSectionCard(
+            context: context,
+            brightnessOverride: _brightness,
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 28),
+            child: _buildLibraryGrid(provider, animeSummaries),
           ),
         ),
       ),
     );
 
-    return slivers;
+    return cards;
   }
 
-  Widget _buildHostCard(
-    BuildContext context,
-    SharedRemoteLibraryProvider provider,
-  ) {
+  Widget _buildHostSection(SharedRemoteLibraryProvider provider) {
     final host = provider.activeHost;
     final isLoading = provider.isLoading;
 
@@ -192,7 +196,7 @@ class _LiquidMediaLibraryPageState extends State<LiquidMediaLibraryPage> {
         description:
             '添加并连接一台安装了 NipaPlay 客户端的设备，\n即可在任意地方访问其中的番剧。',
         primaryLabel: '添加客户端',
-        onPrimaryPressed: () => _showHostDialog(context, provider),
+        onPrimaryPressed: () => _showHostDialog(provider),
       );
     }
 
@@ -203,81 +207,44 @@ class _LiquidMediaLibraryPageState extends State<LiquidMediaLibraryPage> {
         description: '当前有可用客户端，但尚未选择活跃连接。',
         primaryLabel: '选择客户端',
         secondaryLabel: '添加新的客户端',
-        onPrimaryPressed: () => _showHostDialog(context, provider),
-        onSecondaryPressed: () => _showAddHostDialog(context, provider),
+        onPrimaryPressed: () => _showHostDialog(provider),
+        onSecondaryPressed: () => _showAddHostDialog(provider),
       );
     }
 
-    final reachIcon = provider.hasReachableActiveHost
+    final statusIcon = provider.hasReachableActiveHost
         ? CupertinoIcons.cloud
         : CupertinoIcons.exclamationmark_triangle;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: _cardSurface,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: _cardBorderColor),
-        boxShadow: _cardShadow,
-      ),
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: _accentBadgeBackground,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  reachIcon,
-                  color: _accentColor,
-                  size: 18,
-                ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: _accentBadgeBackground,
+                shape: BoxShape.circle,
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      host.displayName,
-                      style: TextStyle(
-                        color: _primaryTextColor,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      host.baseUrl,
-                      style: TextStyle(
-                        color: _secondaryTextColor,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              _buildFilledActionButton(
-                icon: CupertinoIcons.arrow_right_arrow_left,
-                label: '切换',
-                onPressed: () => _showHostDialog(context, provider),
-                compact: true,
-              ),
-            ],
-          ),
-          if (isLoading)
-            Padding(
-              padding: const EdgeInsets.only(top: 16),
-              child: Row(
+              child: Icon(statusIcon, color: _accentColor, size: 18),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  CupertinoActivityIndicator(color: _accentColor),
-                  const SizedBox(width: 8),
                   Text(
-                    '正在刷新…',
+                    host.displayName,
+                    style: TextStyle(
+                      color: _primaryTextColor,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    host.baseUrl,
                     style: TextStyle(
                       color: _secondaryTextColor,
                       fontSize: 13,
@@ -286,42 +253,58 @@ class _LiquidMediaLibraryPageState extends State<LiquidMediaLibraryPage> {
                 ],
               ),
             ),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: [
-              _buildFilledActionButton(
-                icon: CupertinoIcons.refresh,
-                label: '刷新库',
-                onPressed: isLoading
-                    ? null
-                    : () => _refreshLibrary(provider, userInitiated: true),
-              ),
-              _buildOutlinedActionButton(
-                icon: CupertinoIcons.add,
-                label: '添加新客户端',
-                onPressed: () => _showAddHostDialog(context, provider),
-              ),
-            ],
+            _buildFilledActionButton(
+              icon: CupertinoIcons.arrow_right_arrow_left,
+              label: '切换',
+              onPressed: () => _showHostDialog(provider),
+              compact: true,
+            ),
+          ],
+        ),
+        if (isLoading)
+          Padding(
+            padding: const EdgeInsets.only(top: 16),
+            child: Row(
+              children: [
+                CupertinoActivityIndicator(color: _accentColor),
+                const SizedBox(width: 8),
+                Text(
+                  '正在刷新…',
+                  style: TextStyle(
+                    color: _secondaryTextColor,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ],
-      ),
+        const SizedBox(height: 20),
+        Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: [
+            _buildFilledActionButton(
+              icon: CupertinoIcons.refresh,
+              label: '刷新库',
+              onPressed: isLoading
+                  ? null
+                  : () => _refreshLibrary(provider, userInitiated: true),
+            ),
+            _buildOutlinedActionButton(
+              icon: CupertinoIcons.add,
+              label: '添加新客户端',
+              onPressed: () => _showAddHostDialog(provider),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
-  Widget _buildEmptyHostsPlaceholder(BuildContext context) {
-    return _buildEmptyCard(
+  Widget _buildEmptyHostsPlaceholder() {
+    return _buildStatusMessage(
       icon: CupertinoIcons.cloud,
-      title: '没有可用的共享客户端',
-      description:
-          '在家里或服务器上运行 NipaPlay 后，\n点击下方按钮添加连接，即可随时访问远程媒体库。',
-      primaryLabel: '添加客户端',
-      onPrimaryPressed: () => _showHostDialog(
-        context,
-        Provider.of<SharedRemoteLibraryProvider>(context, listen: false),
-      ),
-      centerContent: true,
+      message: '没有可用的共享客户端\n请先添加并连接一台设备',
     );
   }
 
@@ -335,52 +318,103 @@ class _LiquidMediaLibraryPageState extends State<LiquidMediaLibraryPage> {
     );
   }
 
-  Widget _buildErrorCard(SharedRemoteLibraryProvider provider) {
-    final message = provider.errorMessage ?? '';
-    return Container(
-      decoration: BoxDecoration(
-        color: _errorSurface,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _errorBorder),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      child: Row(
-        children: [
-          Icon(CupertinoIcons.exclamationmark_triangle, color: _errorColor, size: 18),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              message,
-              style: TextStyle(color: _errorColor, fontSize: 13),
-            ),
+  Widget _buildErrorChip(SharedRemoteLibraryProvider provider) {
+    return Row(
+      children: [
+        Icon(CupertinoIcons.exclamationmark_triangle, color: _errorColor, size: 18),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            provider.errorMessage ?? '',
+            style: TextStyle(color: _errorColor, fontSize: 13),
           ),
-          CupertinoButton(
-            padding: EdgeInsets.zero,
-            onPressed: provider.clearError,
-            child: Icon(
-              CupertinoIcons.xmark_circle_fill,
-              color: _errorColor.withOpacity(0.8),
-              size: 18,
-            ),
+        ),
+        CupertinoButton(
+          padding: EdgeInsets.zero,
+          onPressed: provider.clearError,
+          child: Icon(
+            CupertinoIcons.xmark_circle_fill,
+            color: _errorColor.withOpacity(0.8),
+            size: 18,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
-  Widget _buildAnimeCard(
-    BuildContext context,
+  Widget _buildLibraryGrid(
+    SharedRemoteLibraryProvider provider,
+    List<SharedRemoteAnimeSummary> animeSummaries,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              '已同步番剧',
+              style: TextStyle(
+                color: _primaryTextColor,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '${animeSummaries.length} 部',
+              style: TextStyle(
+                color: _secondaryTextColor,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            const spacing = 18.0;
+            const minTileWidth = 156.0;
+            int crossAxisCount =
+                (constraints.maxWidth / (minTileWidth + spacing)).floor();
+            crossAxisCount = crossAxisCount.clamp(1, 5);
+
+            return GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: animeSummaries.length,
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: crossAxisCount,
+                crossAxisSpacing: spacing,
+                mainAxisSpacing: spacing,
+                childAspectRatio: 7 / 11,
+              ),
+              itemBuilder: (context, index) => _buildAnimeTile(
+                provider,
+                animeSummaries[index],
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAnimeTile(
     SharedRemoteLibraryProvider provider,
     SharedRemoteAnimeSummary anime,
   ) {
+    final tileBackground =
+        _isDark ? const Color(0xFF1C1C1F) : const Color(0xFFF9F9FC);
+    final borderColor =
+        _isDark ? CupertinoColors.white.withOpacity(0.12) : CupertinoColors.black.withOpacity(0.08);
+
     return GestureDetector(
       onTap: () => _openAnimeDetail(context, provider, anime),
       child: Container(
         decoration: BoxDecoration(
-          color: _cardSurface,
+          color: tileBackground,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: _cardBorderColor),
-          boxShadow: _cardShadow,
+          border: Border.all(color: borderColor),
         ),
         clipBehavior: Clip.antiAlias,
         child: Column(
@@ -388,27 +422,23 @@ class _LiquidMediaLibraryPageState extends State<LiquidMediaLibraryPage> {
           children: [
             AspectRatio(
               aspectRatio: 7 / 10,
-              child: ClipRRect(
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(20)),
-                child: CachedNetworkImageWidget(
-                  imageUrl: anime.imageUrl ?? '',
-                  fit: BoxFit.cover,
-                  delayLoad: false,
-                  errorBuilder: (context, error) => Container(
-                    color: _fallbackImageBackground,
-                    child: Icon(
-                      CupertinoIcons.photo,
-                      color: _secondaryTextColor,
-                      size: 24,
-                    ),
+              child: CachedNetworkImageWidget(
+                imageUrl: anime.imageUrl ?? '',
+                fit: BoxFit.cover,
+                delayLoad: false,
+                errorBuilder: (context, error) => Container(
+                  color: _fallbackImageBackground,
+                  child: Icon(
+                    CupertinoIcons.photo,
+                    color: _secondaryTextColor,
+                    size: 24,
                   ),
                 ),
               ),
             ),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
+                padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -512,15 +542,9 @@ class _LiquidMediaLibraryPageState extends State<LiquidMediaLibraryPage> {
       ],
     );
 
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: _cardSurface,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: _cardBorderColor),
-        boxShadow: _cardShadow,
-      ),
-      padding: const EdgeInsets.all(24),
+    return buildLiquidSectionCard(
+      context: context,
+      brightnessOverride: _brightness,
       child: centerContent ? Center(child: content) : content,
     );
   }
@@ -540,21 +564,15 @@ class _LiquidMediaLibraryPageState extends State<LiquidMediaLibraryPage> {
     );
   }
 
-  Future<void> _showHostDialog(
-    BuildContext context,
-    SharedRemoteLibraryProvider provider,
-  ) async {
+  Future<void> _showHostDialog(SharedRemoteLibraryProvider provider) async {
     if (provider.hosts.isEmpty) {
-      await _showAddHostDialog(context, provider);
+      await _showAddHostDialog(provider);
     } else {
       await SharedRemoteHostSelectionSheet.show(context);
     }
   }
 
-  Future<void> _showAddHostDialog(
-    BuildContext context,
-    SharedRemoteLibraryProvider provider,
-  ) async {
+  Future<void> _showAddHostDialog(SharedRemoteLibraryProvider provider) async {
     await BlurLoginDialog.show(
       context,
       title: '添加 NipaPlay 共享客户端',
@@ -722,8 +740,9 @@ class _LiquidMediaLibraryPageState extends State<LiquidMediaLibraryPage> {
     );
   }
 
-  bool get _isDark =>
-      CupertinoTheme.of(context).brightness == Brightness.dark;
+  Brightness? get _brightness => CupertinoTheme.of(context).brightness;
+
+  bool get _isDark => _brightness == Brightness.dark;
 
   Color get _surfaceBackground =>
       _isDark ? const Color(0xFF0F0F12) : const Color(0xFFF2F2F7);
@@ -734,34 +753,13 @@ class _LiquidMediaLibraryPageState extends State<LiquidMediaLibraryPage> {
   Color get _secondaryTextColor =>
       _primaryTextColor.withOpacity(_isDark ? 0.68 : 0.6);
 
-  Color get _cardSurface => CupertinoColors.white;
-
-  Color get _cardBorderColor =>
-      _isDark ? CupertinoColors.white.withOpacity(0.12) : CupertinoColors.black.withOpacity(0.06);
-
-  List<BoxShadow> get _cardShadow => [
-        BoxShadow(
-          color: _isDark
-              ? CupertinoColors.black.withOpacity(0.35)
-              : CupertinoColors.black.withOpacity(0.05),
-          blurRadius: 28,
-          offset: const Offset(0, 22),
-        ),
-      ];
-
   Color get _accentColor =>
       _isDark ? CupertinoColors.systemBlue : CupertinoColors.activeBlue;
 
   Color get _accentBadgeBackground =>
       _isDark ? const Color(0xFF1E2942) : const Color(0xFFE1EDFF);
 
-  Color get _errorColor =>
-      _isDark ? CupertinoColors.systemRed : CupertinoColors.systemRed;
-
-  Color get _errorSurface =>
-      _errorColor.withOpacity(_isDark ? 0.18 : 0.12);
-
-  Color get _errorBorder => _errorColor.withOpacity(0.2);
+  Color get _errorColor => CupertinoColors.systemRed;
 
   Color get _fallbackImageBackground =>
       _isDark ? const Color(0xFF1E1E22) : const Color(0xFFE9E9EF);

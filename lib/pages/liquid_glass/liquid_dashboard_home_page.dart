@@ -33,6 +33,7 @@ import 'package:nipaplay/utils/video_player_state.dart';
 import 'package:nipaplay/utils/tab_change_notifier.dart';
 import 'package:nipaplay/main.dart'; // 用于MainPageState
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:nipaplay/widgets/liquid_glass_theme/liquid_section_card.dart';
 
 class LiquidDashboardHomePage extends StatefulWidget {
   const LiquidDashboardHomePage({super.key});
@@ -1837,15 +1838,12 @@ class _LiquidDashboardHomePageState extends State<LiquidDashboardHomePage>
     double borderRadius = 28,
   }) {
     final effectivePadding = padding ?? const EdgeInsets.all(24);
-    return Container(
-      decoration: BoxDecoration(
-        color: _liquidControlSurface,
-        borderRadius: BorderRadius.circular(borderRadius),
-        border: Border.all(color: _liquidControlBorder),
-        boxShadow: _liquidSectionShadow,
-      ),
-      padding: effectivePadding,
+    return buildLiquidSectionCard(
+      context: context,
       child: child,
+      padding: effectivePadding,
+      borderRadius: borderRadius,
+      brightnessOverride: Theme.of(context).brightness,
     );
   }
 
