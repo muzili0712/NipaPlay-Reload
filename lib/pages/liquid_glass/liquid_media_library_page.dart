@@ -12,6 +12,7 @@ import 'package:nipaplay/widgets/nipaplay_theme/blur_snackbar.dart';
 import 'package:nipaplay/widgets/nipaplay_theme/cached_network_image_widget.dart';
 import 'package:nipaplay/widgets/nipaplay_theme/shared_remote_host_selection_sheet.dart';
 import 'package:nipaplay/widgets/nipaplay_theme/themed_anime_detail.dart';
+import 'package:nipaplay/widgets/liquid_glass_theme/liquid_page_header.dart';
 
 class LiquidMediaLibraryPage extends StatefulWidget {
   const LiquidMediaLibraryPage({super.key, this.onPlayEpisode});
@@ -53,7 +54,8 @@ class _LiquidMediaLibraryPageState extends State<LiquidMediaLibraryPage> {
               ),
               slivers: [
                 CupertinoSliverRefreshControl(
-                  onRefresh: () => _refreshLibrary(provider, userInitiated: true),
+                  onRefresh: () =>
+                      _refreshLibrary(provider, userInitiated: true),
                 ),
                 ..._buildSlivers(provider),
               ],
@@ -67,52 +69,60 @@ class _LiquidMediaLibraryPageState extends State<LiquidMediaLibraryPage> {
   List<Widget> _buildSlivers(SharedRemoteLibraryProvider provider) {
     final hasHosts = provider.hosts.isNotEmpty;
     final animeSummaries = provider.animeSummaries;
+    final bool isPhone = MediaQuery.of(context).size.shortestSide < 600;
 
-    final cards = <Widget>[
+    final EdgeInsets pagePadding = EdgeInsets.fromLTRB(
+      isPhone ? 8 : 20,
+      isPhone ? 12 : 32,
+      isPhone ? 8 : 20,
+      isPhone ? 24 : 48,
+    );
+
+    final double sectionSpacing = isPhone ? 20 : 28;
+
+    final slivers = <Widget>[
       SliverToBoxAdapter(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 28, 20, 20),
-          child: buildLiquidSectionCard(
-            context: context,
-            brightnessOverride: _brightness,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '媒体库',
-                  style: TextStyle(
-                    color: _primaryTextColor,
-                    fontSize: 32,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.4,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  '连接 NipaPlay 共享客户端，远程访问家中的番剧资源',
-                  style: TextStyle(
-                    color: _secondaryTextColor,
-                    fontSize: 14,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                _buildHostSection(provider),
-              ],
-            ),
+          padding: EdgeInsets.fromLTRB(
+            pagePadding.left,
+            pagePadding.top,
+            pagePadding.right,
+            0,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              LiquidPageHeader(
+                title: '媒体库',
+                subtitle: '连接 NipaPlay 共享客户端，远程访问家中的番剧资源',
+                padding: EdgeInsets.zero,
+                titleFontSize: isPhone ? 28 : 32,
+                subtitleFontSize: isPhone ? 13 : 14,
+                titleLetterSpacing: 0.4,
+                subtitleSpacing: 8,
+              ),
+              SizedBox(height: sectionSpacing),
+              _buildHostSectionCard(provider),
+            ],
           ),
         ),
       ),
     ];
 
     if (provider.errorMessage != null) {
-      cards.add(
+      slivers.add(
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+            padding: EdgeInsets.fromLTRB(
+              pagePadding.left,
+              sectionSpacing,
+              pagePadding.right,
+              0,
+            ),
             child: buildLiquidSectionCard(
               context: context,
               brightnessOverride: _brightness,
-              padding: const EdgeInsets.all(18),
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
               child: _buildErrorChip(provider),
             ),
           ),
@@ -121,56 +131,77 @@ class _LiquidMediaLibraryPageState extends State<LiquidMediaLibraryPage> {
     }
 
     if (!hasHosts) {
-      cards.add(
+      slivers.add(
         SliverFillRemaining(
           hasScrollBody: false,
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 40),
-              child: buildLiquidSectionCard(
-                context: context,
-                brightnessOverride: _brightness,
-                child: _buildEmptyHostsPlaceholder(),
-              ),
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(
+              pagePadding.left,
+              sectionSpacing,
+              pagePadding.right,
+              pagePadding.bottom,
+            ),
+            child: buildLiquidSectionCard(
+              context: context,
+              brightnessOverride: _brightness,
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+              child: _buildEmptyHostsPlaceholder(),
             ),
           ),
         ),
       );
-      return cards;
+      return slivers;
     }
 
     if (provider.isLoading && animeSummaries.isEmpty) {
-      cards.add(
-        const SliverFillRemaining(
+      slivers.add(
+        SliverFillRemaining(
           hasScrollBody: false,
-          child: Center(child: CupertinoActivityIndicator()),
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(
+              pagePadding.left,
+              sectionSpacing,
+              pagePadding.right,
+              pagePadding.bottom,
+            ),
+            child: const Center(child: CupertinoActivityIndicator()),
+          ),
         ),
       );
-      return cards;
+      return slivers;
     }
 
     if (animeSummaries.isEmpty) {
-      cards.add(
+      slivers.add(
         SliverFillRemaining(
           hasScrollBody: false,
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 40),
-              child: buildLiquidSectionCard(
-                context: context,
-                brightnessOverride: _brightness,
-                child: _buildEmptyLibraryPlaceholder(provider.activeHost),
-              ),
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(
+              pagePadding.left,
+              sectionSpacing,
+              pagePadding.right,
+              pagePadding.bottom,
+            ),
+            child: buildLiquidSectionCard(
+              context: context,
+              brightnessOverride: _brightness,
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+              child: _buildEmptyLibraryPlaceholder(provider.activeHost),
             ),
           ),
         ),
       );
-      return cards;
+      return slivers;
     }
 
-    cards.add(
+    slivers.add(
       SliverPadding(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
+        padding: EdgeInsets.fromLTRB(
+          pagePadding.left,
+          sectionSpacing,
+          pagePadding.right,
+          pagePadding.bottom,
+        ),
         sliver: SliverToBoxAdapter(
           child: buildLiquidSectionCard(
             context: context,
@@ -182,26 +213,34 @@ class _LiquidMediaLibraryPageState extends State<LiquidMediaLibraryPage> {
       ),
     );
 
-    return cards;
+    return slivers;
   }
 
-  Widget _buildHostSection(SharedRemoteLibraryProvider provider) {
+  Widget _buildHostSectionCard(SharedRemoteLibraryProvider provider) {
+    return buildLiquidSectionCard(
+      context: context,
+      brightnessOverride: _brightness,
+      padding: const EdgeInsets.all(24),
+      child: _buildHostSectionContent(provider),
+    );
+  }
+
+  Widget _buildHostSectionContent(SharedRemoteLibraryProvider provider) {
     final host = provider.activeHost;
     final isLoading = provider.isLoading;
 
     if (provider.hosts.isEmpty) {
-      return _buildEmptyCard(
+      return _buildEmptyCardContent(
         icon: CupertinoIcons.cloud,
         title: '尚未添加共享客户端',
-        description:
-            '添加并连接一台安装了 NipaPlay 客户端的设备，\n即可在任意地方访问其中的番剧。',
+        description: '添加并连接一台安装了 NipaPlay 客户端的设备，\n即可在任意地方访问其中的番剧。',
         primaryLabel: '添加客户端',
         onPrimaryPressed: () => _showHostDialog(provider),
       );
     }
 
     if (host == null) {
-      return _buildEmptyCard(
+      return _buildEmptyCardContent(
         icon: CupertinoIcons.link,
         title: '请选择一个共享客户端',
         description: '当前有可用客户端，但尚未选择活跃连接。',
@@ -309,9 +348,8 @@ class _LiquidMediaLibraryPageState extends State<LiquidMediaLibraryPage> {
   }
 
   Widget _buildEmptyLibraryPlaceholder(SharedRemoteHost? host) {
-    final description = host == null
-        ? '请选择一个共享客户端'
-        : '客户端 “${host.displayName}” 尚未扫描任何番剧';
+    final description =
+        host == null ? '请选择一个共享客户端' : '客户端 “${host.displayName}” 尚未扫描任何番剧';
     return _buildStatusMessage(
       icon: CupertinoIcons.folder_open,
       message: description,
@@ -321,7 +359,8 @@ class _LiquidMediaLibraryPageState extends State<LiquidMediaLibraryPage> {
   Widget _buildErrorChip(SharedRemoteLibraryProvider provider) {
     return Row(
       children: [
-        Icon(CupertinoIcons.exclamationmark_triangle, color: _errorColor, size: 18),
+        Icon(CupertinoIcons.exclamationmark_triangle,
+            color: _errorColor, size: 18),
         const SizedBox(width: 12),
         Expanded(
           child: Text(
@@ -405,8 +444,9 @@ class _LiquidMediaLibraryPageState extends State<LiquidMediaLibraryPage> {
   ) {
     final tileBackground =
         _isDark ? const Color(0xFF1C1C1F) : const Color(0xFFF9F9FC);
-    final borderColor =
-        _isDark ? CupertinoColors.white.withOpacity(0.12) : CupertinoColors.black.withOpacity(0.08);
+    final borderColor = _isDark
+        ? CupertinoColors.white.withOpacity(0.12)
+        : CupertinoColors.black.withOpacity(0.08);
 
     return GestureDetector(
       onTap: () => _openAnimeDetail(context, provider, anime),
@@ -482,7 +522,7 @@ class _LiquidMediaLibraryPageState extends State<LiquidMediaLibraryPage> {
     );
   }
 
-  Widget _buildEmptyCard({
+  Widget _buildEmptyCardContent({
     required IconData icon,
     required String title,
     required String description,
@@ -542,14 +582,11 @@ class _LiquidMediaLibraryPageState extends State<LiquidMediaLibraryPage> {
       ],
     );
 
-    return buildLiquidSectionCard(
-      context: context,
-      brightnessOverride: _brightness,
-      child: centerContent ? Center(child: content) : content,
-    );
+    return centerContent ? Center(child: content) : content;
   }
 
-  Widget _buildStatusMessage({required IconData icon, required String message}) {
+  Widget _buildStatusMessage(
+      {required IconData icon, required String message}) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [

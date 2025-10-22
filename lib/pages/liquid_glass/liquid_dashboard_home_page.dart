@@ -34,12 +34,14 @@ import 'package:nipaplay/utils/tab_change_notifier.dart';
 import 'package:nipaplay/main.dart'; // 用于MainPageState
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nipaplay/widgets/liquid_glass_theme/liquid_section_card.dart';
+import 'package:nipaplay/widgets/liquid_glass_theme/liquid_page_header.dart';
 
 class LiquidDashboardHomePage extends StatefulWidget {
   const LiquidDashboardHomePage({super.key});
 
   @override
-  State<LiquidDashboardHomePage> createState() => _LiquidDashboardHomePageState();
+  State<LiquidDashboardHomePage> createState() =>
+      _LiquidDashboardHomePageState();
 }
 
 class _LiquidDashboardHomePageState extends State<LiquidDashboardHomePage>
@@ -1574,38 +1576,23 @@ class _LiquidDashboardHomePageState extends State<LiquidDashboardHomePage>
       connectedServers.add('Emby');
     }
 
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: isPhone ? 8 : 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '主页',
-            style: TextStyle(
-              color: _liquidPrimaryTextColor,
-              fontSize: isPhone ? 30 : 40,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.6,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            connectedServers.isEmpty
-                ? '连接媒体服务器以获得更丰富的体验'
-                : '已连接：${connectedServers.join(' · ')}',
-            style: TextStyle(
-              color: _liquidTextColor(0.72),
-              fontSize: isPhone ? 14 : 16,
-            ),
-          ),
-          const SizedBox(height: 20),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: _buildLiquidGlassQuickActions(),
-          ),
-        ],
+    return LiquidPageHeader(
+      title: '主页',
+      subtitle: connectedServers.isEmpty
+          ? '连接媒体服务器以获得更丰富的体验'
+          : '已连接：${connectedServers.join(' · ')}',
+      bottom: Wrap(
+        spacing: 12,
+        runSpacing: 12,
+        children: _buildLiquidGlassQuickActions(),
       ),
+      padding: EdgeInsets.symmetric(horizontal: isPhone ? 8 : 12),
+      titleFontSize: isPhone ? 30 : 40,
+      subtitleFontSize: isPhone ? 14 : 16,
+      titleLetterSpacing: 0.6,
+      subtitleSpacing: 8,
+      bottomSpacing: 20,
+      alignment: CrossAxisAlignment.start,
     );
   }
 
@@ -2228,8 +2215,7 @@ class _LiquidDashboardHomePageState extends State<LiquidDashboardHomePage>
         ),
         child: Center(
           child: CircularProgressIndicator(
-            valueColor:
-                AlwaysStoppedAnimation<Color>(_liquidPrimaryTextColor),
+            valueColor: AlwaysStoppedAnimation<Color>(_liquidPrimaryTextColor),
           ),
         ),
       );
@@ -2372,7 +2358,8 @@ class _LiquidDashboardHomePageState extends State<LiquidDashboardHomePage>
                 errorBuilder: (context, error) => Container(
                   color: _liquidQuickActionBackground,
                   child: Center(
-                    child: Icon(Icons.broken_image, color: _liquidTextColor(0.3)),
+                    child:
+                        Icon(Icons.broken_image, color: _liquidTextColor(0.3)),
                   ),
                 ),
               )
@@ -2772,15 +2759,15 @@ class _LiquidDashboardHomePageState extends State<LiquidDashboardHomePage>
               right: 8,
               bottom: 8,
               left: item.logoImageUrl != null ? 136 : 8, // 如果有Logo就避开它
-          child: Text(
-            item.title,
-            style: TextStyle(
-              color: _liquidPrimaryTextColor,
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              shadows: [
-                Shadow(
-                  color: Colors.black,
+              child: Text(
+                item.title,
+                style: TextStyle(
+                  color: _liquidPrimaryTextColor,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  shadows: [
+                    Shadow(
+                      color: Colors.black,
                       blurRadius: 8,
                       offset: Offset(1, 1),
                     ),
@@ -2811,10 +2798,10 @@ class _LiquidDashboardHomePageState extends State<LiquidDashboardHomePage>
           'assets/jellyfin.svg',
           width: 20,
           height: 20,
-                  colorFilter: ColorFilter.mode(
-                    _liquidPrimaryTextColor,
-                    BlendMode.srcIn,
-                  ),
+          colorFilter: ColorFilter.mode(
+            _liquidPrimaryTextColor,
+            BlendMode.srcIn,
+          ),
         );
         break;
       case RecommendedItemSource.emby:
@@ -2822,10 +2809,10 @@ class _LiquidDashboardHomePageState extends State<LiquidDashboardHomePage>
           'assets/emby.svg',
           width: 20,
           height: 20,
-                  colorFilter: ColorFilter.mode(
-                    _liquidPrimaryTextColor,
-                    BlendMode.srcIn,
-                  ),
+          colorFilter: ColorFilter.mode(
+            _liquidPrimaryTextColor,
+            BlendMode.srcIn,
+          ),
         );
         break;
       case RecommendedItemSource.local:
@@ -2857,8 +2844,8 @@ class _LiquidDashboardHomePageState extends State<LiquidDashboardHomePage>
         child: Container(
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
-            color: _liquidPrimaryTextColor
-                .withOpacity(_liquidIsDark ? 0.2 : 0.1),
+            color:
+                _liquidPrimaryTextColor.withOpacity(_liquidIsDark ? 0.2 : 0.1),
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
               color: _liquidPrimaryTextColor
@@ -2916,7 +2903,8 @@ class _LiquidDashboardHomePageState extends State<LiquidDashboardHomePage>
                   child: Text(
                     '暂无播放记录',
                     locale: Locale("zh-Hans", "zh"),
-                    style: TextStyle(color: _liquidTextColor(0.54), fontSize: 16),
+                    style:
+                        TextStyle(color: _liquidTextColor(0.54), fontSize: 16),
                   ),
                 ),
               )
@@ -2979,15 +2967,15 @@ class _LiquidDashboardHomePageState extends State<LiquidDashboardHomePage>
                     bottom: 0,
                     left: 0,
                     right: 0,
-                  child: LinearProgressIndicator(
-                    value: item.watchProgress,
-                    backgroundColor: _liquidProgressBackground,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      Theme.of(context).colorScheme.secondary,
+                    child: LinearProgressIndicator(
+                      value: item.watchProgress,
+                      backgroundColor: _liquidProgressBackground,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        Theme.of(context).colorScheme.secondary,
+                      ),
+                      minHeight: 4,
                     ),
-                    minHeight: 4,
                   ),
-                ),
                 ],
               ),
             ),
@@ -4201,8 +4189,7 @@ class _LiquidDashboardHomePageState extends State<LiquidDashboardHomePage>
           height: 32,
           decoration: BoxDecoration(
             color: enabled
-                ? _liquidPrimaryTextColor
-                    .withOpacity(_liquidIsDark ? 0.2 : 0.1)
+                ? _liquidPrimaryTextColor.withOpacity(_liquidIsDark ? 0.2 : 0.1)
                 : _liquidPrimaryTextColor
                     .withOpacity(_liquidIsDark ? 0.12 : 0.06),
             borderRadius: BorderRadius.circular(8),
@@ -4223,7 +4210,8 @@ class _LiquidDashboardHomePageState extends State<LiquidDashboardHomePage>
               child: Center(
                 child: Icon(
                   icon,
-                  color: enabled ? _liquidPrimaryTextColor : _liquidTextColor(0.5),
+                  color:
+                      enabled ? _liquidPrimaryTextColor : _liquidTextColor(0.5),
                   size: 18,
                 ),
               ),
@@ -4311,11 +4299,13 @@ class _LiquidDashboardHomePageState extends State<LiquidDashboardHomePage>
   Color get _liquidProgressBackground =>
       _liquidIsDark ? Colors.white24 : Colors.black.withOpacity(0.12);
 
-  Color get _liquidHeroGradientStart =>
-      _liquidIsDark ? Colors.black.withOpacity(0.65) : Colors.white.withOpacity(0.92);
+  Color get _liquidHeroGradientStart => _liquidIsDark
+      ? Colors.black.withOpacity(0.65)
+      : Colors.white.withOpacity(0.92);
 
-  Color get _liquidHeroGradientEnd =>
-      _liquidIsDark ? Colors.black.withOpacity(0.18) : Colors.white.withOpacity(0.4);
+  Color get _liquidHeroGradientEnd => _liquidIsDark
+      ? Colors.black.withOpacity(0.18)
+      : Colors.white.withOpacity(0.4);
 
   LinearGradient get _liquidPlaceholderGradient => LinearGradient(
         colors: _liquidIsDark
