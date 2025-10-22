@@ -210,9 +210,7 @@ class _LiquidMediaLibraryPageState extends State<LiquidMediaLibraryPage> {
   Widget _buildHostSection(SharedRemoteLibraryProvider provider) {
     final hosts = provider.hosts;
     final bool hasHosts = hosts.isNotEmpty;
-    final bool isLoading = provider.isLoading;
     final String? activeHostId = provider.activeHostId;
-    final bool canRefresh = provider.activeHost != null;
 
     final rows = <Widget>[];
 
@@ -249,47 +247,13 @@ class _LiquidMediaLibraryPageState extends State<LiquidMediaLibraryPage> {
           ),
         );
       }
-    } else {
-      rows.add(
-        _buildHostListRow(
-          icon: CupertinoIcons.cloud,
-          iconColor: _secondaryTextColor,
-          text: '尚未添加任何共享客户端',
-          textColor: _secondaryTextColor,
-          onTap: () => _showAddHostDialog(provider),
-        ),
-      );
     }
-
-    if (hasHosts) {
-      rows.add(
-        _buildHostListRow(
-          icon: CupertinoIcons.square_list,
-          iconColor: _secondaryTextColor,
-          text: '选择或管理共享客户端',
-          onTap: () => _showHostDialog(provider),
-        ),
-      );
-    }
-
-    final bool refreshEnabled = !isLoading && canRefresh;
-    rows.add(
-      _buildHostListRow(
-        icon: isLoading ? CupertinoIcons.time : CupertinoIcons.arrow_clockwise,
-        iconColor: refreshEnabled ? _accentColor : _secondaryTextColor,
-        text: isLoading ? '正在刷新媒体库…' : '刷新媒体库',
-        textColor: refreshEnabled ? null : _secondaryTextColor,
-        onTap: refreshEnabled
-            ? () => _refreshLibrary(provider, userInitiated: true)
-            : null,
-      ),
-    );
 
     rows.add(
       _buildHostListRow(
         icon: CupertinoIcons.add,
         iconColor: _accentColor,
-        text: hasHosts ? '添加新的共享客户端' : '添加共享客户端',
+        text: '添加共享客户端',
         onTap: () => _showAddHostDialog(provider),
       ),
     );
