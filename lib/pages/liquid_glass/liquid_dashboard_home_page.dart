@@ -33,7 +33,6 @@ import 'package:nipaplay/utils/video_player_state.dart';
 import 'package:nipaplay/utils/tab_change_notifier.dart';
 import 'package:nipaplay/main.dart'; // 用于MainPageState
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 
 class LiquidDashboardHomePage extends StatefulWidget {
   const LiquidDashboardHomePage({super.key});
@@ -1646,48 +1645,32 @@ class _LiquidDashboardHomePageState extends State<LiquidDashboardHomePage>
       onTap: disabled ? null : onTap,
       child: Opacity(
         opacity: disabled ? 0.6 : 1.0,
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          child: LiquidGlass(
-            shape: LiquidRoundedSuperellipse(
-              borderRadius: const Radius.circular(20),
-            ),
-            settings: LiquidGlassSettings(
-              glassColor: _liquidGlassTintColor,
-              blur: 12,
-              thickness: 10,
-              saturation: 1.2,
-              lightAngle: math.pi / 3,
-              ambientStrength: 0.35,
-              lightIntensity: 1.2,
-              blend: 12,
-            ),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: _liquidGlassBorderColor),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: _liquidControlSurface,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: _liquidControlBorder),
+            boxShadow: _liquidControlShadow,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 18,
+                color: _liquidTextColor(disabled ? 0.6 : 0.95),
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    icon,
-                    size: 18,
-                    color: _liquidTextColor(disabled ? 0.6 : 0.95),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    label,
-                    style: TextStyle(
-                      color: _liquidTextColor(disabled ? 0.6 : 0.95),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: TextStyle(
+                  color: _liquidTextColor(disabled ? 0.6 : 0.95),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            ),
+            ],
           ),
         ),
       ),
@@ -1854,31 +1837,15 @@ class _LiquidDashboardHomePageState extends State<LiquidDashboardHomePage>
     double borderRadius = 28,
   }) {
     final effectivePadding = padding ?? const EdgeInsets.all(24);
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(borderRadius),
-      child: LiquidGlass(
-        shape: LiquidRoundedSuperellipse(
-          borderRadius: Radius.circular(borderRadius),
-        ),
-        settings: LiquidGlassSettings(
-          glassColor: _liquidGlassTintColor,
-          thickness: 18,
-          blur: 18,
-          saturation: 1.25,
-          lightAngle: math.pi / 3,
-          ambientStrength: 0.35,
-          lightIntensity: 1.25,
-          blend: 14,
-        ),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(borderRadius),
-            border: Border.all(color: _liquidGlassBorderColor),
-          ),
-          padding: effectivePadding,
-          child: child,
-        ),
+    return Container(
+      decoration: BoxDecoration(
+        color: _liquidControlSurface,
+        borderRadius: BorderRadius.circular(borderRadius),
+        border: Border.all(color: _liquidControlBorder),
+        boxShadow: _liquidSectionShadow,
       ),
+      padding: effectivePadding,
+      child: child,
     );
   }
 
@@ -4314,10 +4281,31 @@ class _LiquidDashboardHomePageState extends State<LiquidDashboardHomePage>
   Color _liquidTextColor(double opacity) =>
       _liquidPrimaryTextColor.withOpacity(opacity.clamp(0, 1));
 
-  Color get _liquidGlassTintColor => Colors.white.withOpacity(0.92);
+  Color get _liquidControlSurface => Colors.white;
 
-  Color get _liquidGlassBorderColor =>
-      _liquidIsDark ? Colors.white.withOpacity(0.28) : Colors.white.withOpacity(0.18);
+  Color get _liquidControlBorder => _liquidIsDark
+      ? Colors.white.withOpacity(0.14)
+      : Colors.black.withOpacity(0.05);
+
+  List<BoxShadow> get _liquidControlShadow => [
+        BoxShadow(
+          color: _liquidIsDark
+              ? Colors.black.withOpacity(0.45)
+              : Colors.black.withOpacity(0.08),
+          blurRadius: 24,
+          offset: const Offset(0, 18),
+        ),
+      ];
+
+  List<BoxShadow> get _liquidSectionShadow => [
+        BoxShadow(
+          color: _liquidIsDark
+              ? Colors.black.withOpacity(0.35)
+              : Colors.black.withOpacity(0.06),
+          blurRadius: 28,
+          offset: const Offset(0, 22),
+        ),
+      ];
 
   Color get _liquidQuickActionBackground =>
       _liquidIsDark ? const Color(0xFF1E1E22) : const Color(0xFFE6E7ED);
