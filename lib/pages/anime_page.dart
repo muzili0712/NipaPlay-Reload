@@ -8,6 +8,7 @@ import 'package:path/path.dart' as path;
 import 'package:nipaplay/widgets/fluent_ui/fluent_history_all_dialog.dart';
 import 'package:nipaplay/providers/ui_theme_provider.dart';
 import 'package:nipaplay/widgets/fluent_ui/fluent_media_library_tabs.dart';
+import 'package:nipaplay/pages/liquid_glass/liquid_media_library_page.dart';
 import 'package:provider/provider.dart';
 import 'package:nipaplay/models/watch_history_model.dart';
 import 'package:nipaplay/utils/video_player_state.dart';
@@ -216,6 +217,11 @@ class _AnimePageState extends State<AnimePage> with WidgetsBindingObserver {
                           initialIndex: _currentTabIndex,
                           onPlayEpisode: _onWatchHistoryItemTap,
                           mediaLibraryVersion: _mediaLibraryVersion,
+                        );
+                      }
+                      if (uiThemeProvider.isLiquidGlassTheme) {
+                        return LiquidMediaLibraryPage(
+                          onPlayEpisode: _onWatchHistoryItemTap,
                         );
                       }
                       return _MediaLibraryTabs(
