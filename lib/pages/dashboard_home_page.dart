@@ -35,6 +35,7 @@ import 'package:nipaplay/utils/video_player_state.dart';
 import 'package:nipaplay/utils/tab_change_notifier.dart';
 import 'package:nipaplay/main.dart'; // 用于MainPageState
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 
 class DashboardHomePage extends StatefulWidget {
   const DashboardHomePage({super.key});
@@ -1492,7 +1493,15 @@ class _DashboardHomePageState extends State<DashboardHomePage>
       child: Scaffold(
         backgroundColor: Colors.transparent,
         body: Consumer3<JellyfinProvider, EmbyProvider, UIThemeProvider>(
-          builder: (context, jellyfinProvider, embyProvider, uiThemeProvider, child) {
+          builder: (context, jellyfinProvider, embyProvider, uiThemeProvider,
+              child) {
+            if (uiThemeProvider.isLiquidGlassTheme) {
+              return _buildLiquidGlassHome(
+                isPhone: isPhone,
+                jellyfinProvider: jellyfinProvider,
+                embyProvider: embyProvider,
+              );
+            }
             return SingleChildScrollView(
               controller: _mainScrollController,
               physics: const AlwaysScrollableScrollPhysics(),
@@ -1638,6 +1647,752 @@ class _DashboardHomePageState extends State<DashboardHomePage>
                     ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLiquidGlassHome({
+    required bool isPhone,
+    required JellyfinProvider jellyfinProvider,
+    required EmbyProvider embyProvider,
+  }) {
+    final sectionSpacing = isPhone ? 20.0 : 28.0;
+    final sections = <Widget>[
+      _buildLiquidGlassHeader(
+        isPhone: isPhone,
+        jellyfinConnected: jellyfinProvider.isConnected,
+        embyConnected: embyProvider.isConnected,
+      ),
+      SizedBox(height: sectionSpacing),
+      _buildLiquidGlassHeroSection(isPhone: isPhone),
+      SizedBox(height: sectionSpacing),
+      _buildLiquidGlassContinueWatching(isPhone: isPhone),
+    ];
+
+    final recentSections = _buildLiquidGlassRecentSections(isPhone: isPhone);
+    if (recentSections.isNotEmpty) {
+      for (final section in recentSections) {
+        sections.add(section);
+        sections.add(SizedBox(height: sectionSpacing));
+      }
+      if (sections.isNotEmpty) {
+        sections.removeLast();
+      }
+    }
+
+    sections.add(SizedBox(height: isPhone ? 80 : 120));
+
+    return SingleChildScrollView(
+      controller: _mainScrollController,
+      physics: const BouncingScrollPhysics(
+        parent: AlwaysScrollableScrollPhysics(),
+      ),
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          isPhone ? 8 : 20,
+          isPhone ? 12 : 32,
+          isPhone ? 8 : 20,
+          isPhone ? 24 : 48,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: sections,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLiquidGlassHeader({
+    required bool isPhone,
+    required bool jellyfinConnected,
+    required bool embyConnected,
+  }) {
+    final connectedServers = <String>[];
+    if (jellyfinConnected) {
+      connectedServers.add('Jellyfin');
+    }
+    if (embyConnected) {
+      connectedServers.add('Emby');
+    }
+
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: isPhone ? 8 : 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '主页',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: isPhone ? 30 : 40,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.6,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            connectedServers.isEmpty
+                ? '连接媒体服务器以获得更丰富的体验'
+                : '已连接：${connectedServers.join(' · ')}',
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.72),
+              fontSize: isPhone ? 14 : 16,
+            ),
+          ),
+          const SizedBox(height: 20),
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: _buildLiquidGlassQuickActions(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _buildLiquidGlassQuickActions() {
+    final actions = <Widget>[];
+
+    actions.add(_buildQuickAction(
+      icon: Icons.video_library_outlined,
+      label: '媒体库',
+      onTap: () => _jumpToTabSafely(_libraryTabIndex()),
+    ));
+
+    final newSeriesIndex = _newSeriesTabIndex();
+    if (newSeriesIndex != null) {
+      actions.add(_buildQuickAction(
+        icon: Icons.auto_awesome,
+        label: '新番速览',
+        onTap: () => _jumpToTabSafely(newSeriesIndex),
+      ));
+    }
+
+    actions.add(_buildQuickAction(
+      icon: Icons.refresh,
+      label: _isLoadingRecommended ? '正在刷新' : '刷新推荐',
+      onTap: _isLoadingRecommended ? null : () => _loadData(),
+    ));
+
+    return actions;
+  }
+
+  Widget _buildQuickAction({
+    required IconData icon,
+    required String label,
+    VoidCallback? onTap,
+  }) {
+    final disabled = onTap == null;
+    return GestureDetector(
+      onTap: disabled ? null : onTap,
+      child: Opacity(
+        opacity: disabled ? 0.6 : 1.0,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: LiquidGlass(
+            shape: LiquidRoundedSuperellipse(
+              borderRadius: const Radius.circular(20),
+            ),
+            settings: LiquidGlassSettings(
+              glassColor: const Color(0x332E3A59),
+              blur: 12,
+              thickness: 10,
+              saturation: 1.2,
+              lightAngle: math.pi / 3,
+              ambientStrength: 0.35,
+              lightIntensity: 1.2,
+              blend: 12,
+            ),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.white.withOpacity(0.08)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    icon,
+                    size: 18,
+                    color: Colors.white.withOpacity(disabled ? 0.6 : 0.95),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    label,
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(
+                        disabled ? 0.6 : 0.95,
+                      ),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _jumpToTabSafely(int? tabIndex) {
+    if (tabIndex == null) {
+      return;
+    }
+    final mainState = MainPageState.of(context);
+    final controller = mainState?.globalTabController;
+    if (controller != null && tabIndex >= 0 && tabIndex < controller.length) {
+      controller.animateTo(tabIndex);
+    } else {
+      try {
+        final notifier = Provider.of<TabChangeNotifier>(context, listen: false);
+        notifier.changeTab(tabIndex);
+      } catch (_) {}
+    }
+  }
+
+  int _libraryTabIndex() {
+    final controller = MainPageState.of(context)?.globalTabController;
+    if (controller != null && controller.length > 2) {
+      return 2;
+    }
+    if (controller != null && controller.length > 1) {
+      return 1;
+    }
+    return 0;
+  }
+
+  int? _newSeriesTabIndex() {
+    final controller = MainPageState.of(context)?.globalTabController;
+    if (controller != null && controller.length >= 5) {
+      return 3;
+    }
+    return null;
+  }
+
+  Widget _buildLiquidGlassHeroSection({required bool isPhone}) {
+    if (_isLoadingRecommended) {
+      return _buildGlassContainer(
+        child: _buildGlassLoadingContent('正在加载推荐内容...'),
+      );
+    }
+
+    if (_recommendedItems.isEmpty) {
+      return _buildGlassContainer(
+        child: _buildGlassEmptyContent('暂无推荐内容'),
+      );
+    }
+
+    final displayItems =
+        _recommendedItems.take(isPhone ? 4 : 5).toList(growable: false);
+    final pageCount = displayItems.length;
+
+    return _buildGlassContainer(
+      padding: EdgeInsets.zero,
+      child: SizedBox(
+        height: isPhone ? 260 : 360,
+        child: Stack(
+          children: [
+            PageView.builder(
+              controller: _heroBannerPageController,
+              itemCount: pageCount,
+              onPageChanged: _handleHeroPageChanged,
+              itemBuilder: (context, index) => _buildLiquidHeroCard(
+                displayItems[index],
+                compact: isPhone,
+              ),
+            ),
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 12,
+              child: _buildPageIndicator(fullWidth: true, count: pageCount),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _handleHeroPageChanged(int index) {
+    _currentHeroBannerIndex = index;
+    _heroBannerIndexNotifier.value = index;
+    _stopAutoSwitch();
+    Timer(const Duration(seconds: 3), () {
+      if (!mounted) return;
+      _resumeAutoSwitch();
+    });
+  }
+
+  Widget _buildLiquidHeroCard(RecommendedItem item, {required bool compact}) {
+    final borderRadius = BorderRadius.circular(compact ? 24 : 28);
+    return GestureDetector(
+      onTap: () => _onRecommendedItemTap(item),
+      child: ClipRRect(
+        borderRadius: borderRadius,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (item.backgroundImageUrl != null &&
+                item.backgroundImageUrl!.isNotEmpty)
+              CachedNetworkImageWidget(
+                imageUrl: item.backgroundImageUrl!,
+                fit: BoxFit.cover,
+                width: double.infinity,
+                height: double.infinity,
+                delayLoad: _shouldDelayImageLoad(),
+                errorBuilder: (context, error) => _buildGradientPlaceholder(),
+              )
+            else
+              _buildGradientPlaceholder(),
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.black.withOpacity(0.65),
+                    Colors.black.withOpacity(0.1),
+                  ],
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                ),
+              ),
+            ),
+            Positioned(
+              left: compact ? 16 : 24,
+              right: compact ? 16 : 24,
+              bottom: compact ? 20 : 28,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (item.subtitle != null && item.subtitle!.isNotEmpty)
+                    Text(
+                      item.subtitle!,
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.8),
+                        fontSize: compact ? 13 : 14,
+                      ),
+                    ),
+                  Text(
+                    item.title,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: compact ? 20 : 28,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGlassContainer({
+    required Widget child,
+    EdgeInsets? padding,
+    double borderRadius = 28,
+  }) {
+    final effectivePadding = padding ?? const EdgeInsets.all(24);
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(borderRadius),
+      child: LiquidGlass(
+        shape: LiquidRoundedSuperellipse(
+          borderRadius: Radius.circular(borderRadius),
+        ),
+        settings: LiquidGlassSettings(
+          glassColor: Colors.white.withOpacity(0.08),
+          thickness: 18,
+          blur: 18,
+          saturation: 1.25,
+          lightAngle: math.pi / 3,
+          ambientStrength: 0.35,
+          lightIntensity: 1.25,
+          blend: 14,
+        ),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(borderRadius),
+            border: Border.all(color: Colors.white.withOpacity(0.1)),
+          ),
+          padding: effectivePadding,
+          child: child,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGlassLoadingContent(String message) {
+    return SizedBox(
+      height: 160,
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(
+              height: 32,
+              width: 32,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.4,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              message,
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.75),
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGlassEmptyContent(String message) {
+    return SizedBox(
+      height: 140,
+      child: Center(
+        child: Text(
+          message,
+          style: TextStyle(
+            color: Colors.white.withOpacity(0.7),
+            fontSize: 14,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLiquidSectionTitle(String title, {IconData? icon}) {
+    return Row(
+      children: [
+        if (icon != null)
+          Icon(
+            icon,
+            color: Colors.white.withOpacity(0.9),
+            size: 20,
+          ),
+        if (icon != null) const SizedBox(width: 8),
+        Text(
+          title,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLiquidGlassContinueWatching({required bool isPhone}) {
+    return _buildGlassContainer(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildLiquidSectionTitle('继续观看', icon: Icons.play_circle_outline),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: isPhone ? 210 : 240,
+            child: Consumer<WatchHistoryProvider>(
+              builder: (context, historyProvider, child) {
+                final history = historyProvider.history
+                    .where((item) => item.duration > 0)
+                    .toList();
+                if (history.isEmpty) {
+                  return _buildGlassEmptyContent('暂无播放记录');
+                }
+                final maxCount = math.min(history.length, isPhone ? 8 : 10);
+                return ListView.separated(
+                  controller: _continueWatchingScrollController,
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: maxCount,
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(width: 16),
+                  itemBuilder: (context, index) => GestureDetector(
+                    onTap: () => _onWatchHistoryItemTap(history[index]),
+                    child: _buildLiquidContinueCard(
+                      history[index],
+                      compact: isPhone,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLiquidContinueCard(WatchHistoryItem item,
+      {required bool compact}) {
+    final width = compact ? 190.0 : 230.0;
+    final coverHeight = compact ? 120.0 : 150.0;
+    return SizedBox(
+      width: width,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: Stack(
+              children: [
+                SizedBox(
+                  height: coverHeight,
+                  width: double.infinity,
+                  child: _getVideoThumbnail(item),
+                ),
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: LinearProgressIndicator(
+                    value: item.watchProgress.clamp(0, 1),
+                    backgroundColor: Colors.white24,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      Colors.white.withOpacity(0.9),
+                    ),
+                    minHeight: 4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            item.animeName.isNotEmpty
+                ? item.animeName
+                : path.basename(item.filePath),
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+              fontSize: 15,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          if (item.episodeTitle != null && item.episodeTitle!.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                item.episodeTitle!,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.65),
+                  fontSize: 12,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _buildLiquidGlassRecentSections({required bool isPhone}) {
+    final sections = <Widget>[];
+
+    _recentJellyfinItemsByLibrary.forEach((library, items) {
+      if (items.isEmpty) return;
+      sections.add(
+        _buildLiquidGlassMediaSection(
+          title: 'Jellyfin · $library',
+          items: items,
+          scrollController: _getJellyfinLibraryScrollController(library),
+          onTap: (item) => _onJellyfinItemTap(item as JellyfinMediaItem),
+          isPhone: isPhone,
+        ),
+      );
+    });
+
+    _recentEmbyItemsByLibrary.forEach((library, items) {
+      if (items.isEmpty) return;
+      sections.add(
+        _buildLiquidGlassMediaSection(
+          title: 'Emby · $library',
+          items: items,
+          scrollController: _getEmbyLibraryScrollController(library),
+          onTap: (item) => _onEmbyItemTap(item as EmbyMediaItem),
+          isPhone: isPhone,
+        ),
+      );
+    });
+
+    if (_localAnimeItems.isNotEmpty) {
+      sections.add(
+        _buildLiquidGlassMediaSection(
+          title: '本地媒体库',
+          items: _localAnimeItems,
+          scrollController: _getLocalLibraryScrollController(),
+          onTap: (item) => _onLocalAnimeItemTap(item as LocalAnimeItem),
+          isPhone: isPhone,
+        ),
+      );
+    }
+
+    return sections;
+  }
+
+  Widget _buildLiquidGlassMediaSection({
+    required String title,
+    required List<dynamic> items,
+    required ScrollController scrollController,
+    required void Function(dynamic) onTap,
+    required bool isPhone,
+  }) {
+    return _buildGlassContainer(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildLiquidSectionTitle(title, icon: Icons.collections_bookmark),
+          const SizedBox(height: 16),
+          if (items.isEmpty)
+            _buildGlassEmptyContent('暂无条目')
+          else
+            SizedBox(
+              height: isPhone ? 220 : 240,
+              child: ListView.separated(
+                controller: scrollController,
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                itemCount: items.length,
+                separatorBuilder: (context, index) => const SizedBox(width: 16),
+                itemBuilder: (context, index) => _buildLiquidMediaCard(
+                  items[index],
+                  onTap: onTap,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLiquidMediaCard(
+    dynamic item, {
+    required void Function(dynamic) onTap,
+  }) {
+    final info = _resolveLiquidMediaInfo(item);
+    return GestureDetector(
+      onTap: () => onTap(item),
+      child: SizedBox(
+        width: 160,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(22),
+              child: Stack(
+                children: [
+                  SizedBox(
+                    height: 200,
+                    width: double.infinity,
+                    child: info.imageUrl != null && info.imageUrl!.isNotEmpty
+                        ? CachedNetworkImageWidget(
+                            imageUrl: info.imageUrl!,
+                            fit: BoxFit.cover,
+                            delayLoad: _shouldDelayImageLoad(),
+                            errorBuilder: (context, error) =>
+                                _buildGradientPlaceholder(),
+                          )
+                        : _buildGradientPlaceholder(),
+                  ),
+                  Container(
+                    height: 200,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.black.withOpacity(0.55),
+                          Colors.black.withOpacity(0.1),
+                        ],
+                        begin: Alignment.bottomCenter,
+                        end: Alignment.topCenter,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              info.title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+                fontSize: 15,
+              ),
+            ),
+            if (info.subtitle != null && info.subtitle!.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  info.subtitle!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.65),
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  _LiquidMediaInfo _resolveLiquidMediaInfo(dynamic item) {
+    if (item is JellyfinMediaItem) {
+      String imageUrl = '';
+      try {
+        imageUrl = JellyfinService.instance.getImageUrl(item.id);
+      } catch (_) {}
+      return _LiquidMediaInfo(
+        title: item.name,
+        subtitle: item.productionYear?.toString(),
+        imageUrl: imageUrl,
+      );
+    }
+    if (item is EmbyMediaItem) {
+      String imageUrl = '';
+      try {
+        imageUrl = EmbyService.instance.getImageUrl(item.id);
+      } catch (_) {}
+      return _LiquidMediaInfo(
+        title: item.name,
+        subtitle: item.productionYear?.toString(),
+        imageUrl: imageUrl,
+      );
+    }
+    if (item is LocalAnimeItem) {
+      final subtitle = item.latestEpisode.episodeTitle;
+      return _LiquidMediaInfo(
+        title: item.animeName,
+        subtitle: subtitle != null && subtitle.isNotEmpty ? subtitle : null,
+        imageUrl: item.imageUrl,
+      );
+    }
+    return const _LiquidMediaInfo(title: '未知条目');
+  }
+
+  Widget _buildGradientPlaceholder() {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFF1F1F2E), Color(0xFF2A2A3F)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
       ),
     );
@@ -3704,6 +4459,18 @@ enum RecommendedItemSource {
 }
 
 // 本地动画项目数据模型
+class _LiquidMediaInfo {
+  const _LiquidMediaInfo({
+    required this.title,
+    this.subtitle,
+    this.imageUrl,
+  });
+
+  final String title;
+  final String? subtitle;
+  final String? imageUrl;
+}
+
 class LocalAnimeItem {
   final int animeId;
   final String animeName;

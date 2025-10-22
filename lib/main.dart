@@ -999,6 +999,45 @@ class MainPageState extends State<MainPage>
     }
   }
 
+  List<int> _computeLiquidGlassTabMapping() {
+    final controller = globalTabController;
+    if (controller == null) {
+      return const [];
+    }
+
+    final length = controller.length;
+    final mapping = <int>[];
+
+    // 主页始终为索引0
+    mapping.add(0);
+
+    // 媒体库优先选择索引2（AnimePage），否则回退到可用索引
+    if (length > 2) {
+      mapping.add(2);
+    } else if (length > 1) {
+      mapping.add(1);
+    }
+
+    // 设置页面位于最后一个索引
+    final settingsIndex = length - 1;
+    if (!mapping.contains(settingsIndex)) {
+      mapping.add(settingsIndex);
+    }
+
+    // 补足到3个元素，确保与LiquidGlass标签数量一致
+    for (var i = 0; mapping.length < 3 && i < length; i++) {
+      if (!mapping.contains(i)) {
+        mapping.add(i);
+      }
+    }
+
+    if (mapping.isEmpty) {
+      mapping.add(0);
+    }
+
+    return mapping.take(3).toList();
+  }
+
   void _initializeListeners() {
     globalTabController?.addListener(_onTabChange);
     debugPrint(
@@ -1218,6 +1257,8 @@ class MainPageState extends State<MainPage>
                     tabController: globalTabController,
                     tabs: createLiquidGlassTabs(),
                     showNavigation: shouldShowAppBar,
+                    visibleTabIndices: _computeLiquidGlassTabMapping(),
+                    onPlusPressed: () => _showGlobalUploadDialog(context),
                   );
                 }
 

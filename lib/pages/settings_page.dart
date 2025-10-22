@@ -1,4 +1,6 @@
 // settings_page.dart
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:kmbal_ionicons/kmbal_ionicons.dart';
 import 'package:nipaplay/pages/settings/theme_mode_page.dart'; // 导入 ThemeModePage
@@ -21,6 +23,7 @@ import 'package:nipaplay/pages/settings/backup_restore_page.dart';
 import 'package:nipaplay/pages/settings/network_settings_page.dart';
 import 'package:nipaplay/providers/ui_theme_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -93,177 +96,311 @@ class _SettingsPageState extends State<SettingsPage>
   Widget build(BuildContext context) {
     return Consumer<UIThemeProvider>(
       builder: (context, uiThemeProvider, child) {
-        // ResponsiveContainer 会根据 isDesktop 决定是否显示 currentPage
+        final themeNotifier = context.read<ThemeNotifier>();
+        final entries = _buildSettingsEntries(themeNotifier);
+
+        final Widget settingsContent = uiThemeProvider.isLiquidGlassTheme
+            ? _buildLiquidGlassSettings(entries)
+            : _buildStandardSettingsList(entries);
+
         return ResponsiveContainer(
-          currentPage: currentPage ?? Container(), // 将当前页面状态传递给 ResponsiveContainer
-          // child 是 ListView，始终显示
-          child: ListView(
-            children: [
-              // 液态玻璃主题下的上方留白
-              if (uiThemeProvider.isLiquidGlassTheme) ...[
-                const SizedBox(height: 24),
-              ],
-          ListTile(
-            title: const Text("账号",
-                locale: Locale("zh-Hans", "zh"),
-                style: TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.bold)),
-            trailing: const Icon(Ionicons.chevron_forward_outline,
-                color: Colors.white),
-            onTap: () {
-              _handleItemTap(const AccountPage(), "账号设置");
-            },
+          currentPage: currentPage ?? Container(),
+          child: settingsContent,
+        );
+      },
+    );
+  }
+
+  List<_SettingsTileData> _buildSettingsEntries(ThemeNotifier themeNotifier) {
+    final entries = <_SettingsTileData>[
+      _SettingsTileData(
+        title: '账号',
+        description: '管理登录状态与用户资料',
+        icon: Ionicons.person_circle_outline,
+        onTap: () => _handleItemTap(const AccountPage(), '账号设置'),
+      ),
+      _SettingsTileData(
+        title: '外观',
+        description: '切换明暗模式与界面风格',
+        icon: Ionicons.color_palette_outline,
+        onTap: () => _handleItemTap(
+          ThemeModePage(themeNotifier: themeNotifier),
+          '外观设置',
+        ),
+      ),
+      _SettingsTileData(
+        title: '主题',
+        description: '选择界面主题样式',
+        icon: Ionicons.sparkles_outline,
+        onTap: () => _handleItemTap(const UIThemePage(), '主题设置'),
+      ),
+      _SettingsTileData(
+        title: '通用',
+        description: '播放、字幕及常规首选项',
+        icon: Ionicons.options_outline,
+        onTap: () => _handleItemTap(const GeneralPage(), '通用设置'),
+      ),
+      _SettingsTileData(
+        title: '网络',
+        description: '代理、缓存与连通性设置',
+        icon: Ionicons.globe_outline,
+        onTap: () => _handleItemTap(const NetworkSettingsPage(), '网络设置'),
+      ),
+      _SettingsTileData(
+        title: '观看记录',
+        description: '查看与管理本地观看历史',
+        icon: Ionicons.time_outline,
+        onTap: () => _handleItemTap(const WatchHistoryPage(), '观看记录'),
+      ),
+    ];
+
+    if (!globals.isPhone) {
+      entries.add(
+        _SettingsTileData(
+          title: '备份与恢复',
+          description: '导出或恢复应用配置',
+          icon: Ionicons.archive_outline,
+          onTap: () => _handleItemTap(const BackupRestorePage(), '备份与恢复'),
+        ),
+      );
+    }
+
+    entries.add(
+      _SettingsTileData(
+        title: '播放器',
+        description: '渲染、解码与播放体验',
+        icon: Ionicons.play_circle_outline,
+        onTap: () => _handleItemTap(const PlayerSettingsPage(), '播放器设置'),
+      ),
+    );
+
+    if (!globals.isPhone) {
+      entries.addAll([
+        _SettingsTileData(
+          title: '快捷键',
+          description: '自定义快速操作与控制',
+          icon: Icons.keyboard_outlined,
+          onTap: () => _handleItemTap(
+            const ShortcutsSettingsPage(),
+            '快捷键设置',
           ),
-          ListTile(
-            title: const Text("外观",
-                locale: Locale("zh-Hans", "zh"),
-                style: TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.bold)),
-            trailing: const Icon(Ionicons.chevron_forward_outline,
-                color: Colors.white),
-            onTap: () {
-              final themeNotifier =
-                  context.read<ThemeNotifier>(); // 获取 Notifier
-              // 调用通用处理函数
-              _handleItemTap(
-                  ThemeModePage(themeNotifier: themeNotifier), // 目标页面
-                  "外观设置" // 移动端 AppBar 标题
-                  );
-            },
+        ),
+        _SettingsTileData(
+          title: '远程访问（实验）',
+          description: '配置远程访问服务',
+          icon: Ionicons.cloud_outline,
+          onTap: () => _handleItemTap(const RemoteAccessPage(), '远程访问'),
+        ),
+      ]);
+    }
+
+    entries.addAll([
+      _SettingsTileData(
+        title: '远程媒体库',
+        description: '连接云端番剧库与同步',
+        icon: Icons.tv_outlined,
+        onTap: () => _handleItemTap(
+          const RemoteMediaLibraryPage(),
+          '远程媒体库',
+        ),
+      ),
+      _SettingsTileData(
+        title: '开发者选项',
+        description: '调试工具与高级功能',
+        icon: Ionicons.code_outline,
+        onTap: () => _handleItemTap(
+          const DeveloperOptionsPage(),
+          '开发者选项',
+        ),
+      ),
+      _SettingsTileData(
+        title: '关于',
+        description: '版本信息与鸣谢',
+        icon: Ionicons.information_circle_outline,
+        onTap: () => _handleItemTap(const AboutPage(), '关于'),
+      ),
+    ]);
+
+    return entries;
+  }
+
+  Widget _buildStandardSettingsList(List<_SettingsTileData> entries) {
+    return ListView.separated(
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+      itemBuilder: (context, index) {
+        final entry = entries[index];
+        return ListTile(
+          leading: Icon(
+            entry.icon,
+            color: Colors.white.withOpacity(0.8),
           ),
-          ListTile(
-            title: const Text("主题",
-                locale: Locale("zh-Hans", "zh"),
-                style: TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.bold)),
-            trailing: const Icon(Ionicons.chevron_forward_outline,
-                color: Colors.white),
-            onTap: () {
-              _handleItemTap(const UIThemePage(), "主题设置");
-            },
-          ),
-          ListTile(
-            title: const Text("通用",
-                locale: Locale("zh-Hans", "zh"),
-                style: TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.bold)),
-            trailing: const Icon(Ionicons.chevron_forward_outline,
-                color: Colors.white),
-            onTap: () {
-              _handleItemTap(const GeneralPage(), "通用设置");
-            },
-          ),
-          ListTile(
-            title: const Text("网络",
-                locale: Locale("zh-Hans", "zh"),
-                style: TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.bold)),
-            trailing: const Icon(Ionicons.chevron_forward_outline,
-                color: Colors.white),
-            onTap: () {
-              _handleItemTap(const NetworkSettingsPage(), "网络设置");
-            },
-          ),
-          ListTile(
-            title: const Text("观看记录",
-                locale: Locale("zh-Hans", "zh"),
-                style: TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.bold)),
-            trailing: const Icon(Ionicons.chevron_forward_outline,
-                color: Colors.white),
-            onTap: () {
-              _handleItemTap(const WatchHistoryPage(), "观看记录");
-            },
-          ),
-          if (!globals.isPhone)
-            ListTile(
-              title: const Text("备份与恢复",
-                  locale: Locale("zh-Hans", "zh"),
-                  style: TextStyle(
-                      color: Colors.white, fontWeight: FontWeight.bold)),
-              trailing: const Icon(Ionicons.chevron_forward_outline,
-                  color: Colors.white),
-              onTap: () {
-                _handleItemTap(const BackupRestorePage(), "备份与恢复");
-              },
+          title: Text(
+            entry.title,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
             ),
-          ListTile(
-            title: const Text("播放器",
-                locale: Locale("zh-Hans", "zh"),
-                style: TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.bold)),
-            trailing: const Icon(Ionicons.chevron_forward_outline,
-                color: Colors.white),
-            onTap: () {
-              _handleItemTap(const PlayerSettingsPage(), "播放器设置");
-            },
           ),
-          if (!globals.isPhone)
-            ListTile(
-              title: const Text("快捷键",
-                  locale: Locale("zh-Hans", "zh"),
+          subtitle: entry.description != null
+              ? Text(
+                  entry.description!,
                   style: TextStyle(
-                      color: Colors.white, fontWeight: FontWeight.bold)),
-              trailing: const Icon(Ionicons.chevron_forward_outline,
-                  color: Colors.white),
-              onTap: () {
-                _handleItemTap(const ShortcutsSettingsPage(), "快捷键设置");
-              },
-            ),
-          if (!globals.isPhone)
-            ListTile(
-              title: const Text("远程访问（实验性）",
-                  locale: Locale("zh-Hans", "zh"),
-                  style: TextStyle(
-                      color: Colors.white, fontWeight: FontWeight.bold)),
-              trailing: const Icon(Ionicons.chevron_forward_outline,
-                  color: Colors.white),
-              onTap: () {
-                _handleItemTap(const RemoteAccessPage(), "远程访问");
-              },
-            ),
-          ListTile(
-            title: const Text("远程媒体库",
-                locale: Locale("zh-Hans", "zh"),
-                style: TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.bold)),
-            trailing: const Icon(Ionicons.chevron_forward_outline,
-                color: Colors.white),
-            onTap: () {
-              _handleItemTap(const RemoteMediaLibraryPage(), "远程媒体库");
-            },
+                    color: Colors.white.withOpacity(0.6),
+                    fontSize: 12,
+                  ),
+                )
+              : null,
+          trailing: const Icon(
+            Ionicons.chevron_forward_outline,
+            color: Colors.white,
           ),
-          // 开发者选项
-          ListTile(
-            title: const Text("开发者选项",
-                locale: Locale("zh-Hans", "zh"),
-                style: TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.bold)),
-            trailing: const Icon(Ionicons.chevron_forward_outline,
-                color: Colors.white),
-            onTap: () {
-              _handleItemTap(const DeveloperOptionsPage(), "开发者选项");
-            },
+          onTap: entry.onTap,
+        );
+      },
+      separatorBuilder: (context, index) => Divider(
+        height: 1,
+        color: Colors.white.withOpacity(0.08),
+      ),
+      itemCount: entries.length,
+    );
+  }
+
+  Widget _buildLiquidGlassSettings(List<_SettingsTileData> entries) {
+    final size = MediaQuery.of(context).size;
+    final bool isWide = globals.isDesktop || globals.isTablet;
+    final double cardWidth = isWide ? 230 : math.max(size.width - 48, 240);
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(20, 28, 20, 120),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            '设置',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 34,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.4,
+            ),
           ),
-          ListTile(
-            title: const Text("关于",
-                locale: Locale("zh-Hans", "zh"),
-                style: TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.bold)),
-            trailing: const Icon(Ionicons.chevron_forward_outline,
-                color: Colors.white),
-            onTap: () {
-              // 调用通用处理函数
-              _handleItemTap(
-                  const AboutPage(), // 目标页面
-                  "关于" // 移动端 AppBar 标题
-                  );
-            },
+          const SizedBox(height: 8),
+          Text(
+            '调节播放体验与账户安全',
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.7),
+              fontSize: 14,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Wrap(
+            spacing: 18,
+            runSpacing: 18,
+            children: entries
+                .map((entry) => _buildSettingsCard(entry, cardWidth))
+                .toList(),
           ),
         ],
       ),
     );
-      },
+  }
+
+  Widget _buildSettingsCard(_SettingsTileData entry, double width) {
+    return SizedBox(
+      width: width,
+      child: GestureDetector(
+        onTap: entry.onTap,
+        child: _buildSettingsGlassCard(entry),
+      ),
     );
   }
+
+  Widget _buildSettingsGlassCard(_SettingsTileData entry) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(26),
+      child: LiquidGlass(
+        shape: LiquidRoundedSuperellipse(
+          borderRadius: const Radius.circular(26),
+        ),
+        settings: LiquidGlassSettings(
+          glassColor: Colors.white.withOpacity(0.08),
+          blur: 18,
+          thickness: 18,
+          saturation: 1.22,
+          lightAngle: math.pi / 3,
+          ambientStrength: 0.35,
+          lightIntensity: 1.25,
+          blend: 14,
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(26),
+            border: Border.all(color: Colors.white.withOpacity(0.1)),
+          ),
+          child: SizedBox(
+            height: 180,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(entry.icon, color: Colors.white, size: 28),
+                const SizedBox(height: 18),
+                Text(
+                  entry.title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                if (entry.description != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    entry.description!,
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.68),
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+                const Spacer(),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Text(
+                      '打开',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.85),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    const Icon(
+                      Ionicons.arrow_forward_circle_outline,
+                      color: Colors.white,
+                      size: 18,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SettingsTileData {
+  const _SettingsTileData({
+    required this.title,
+    required this.icon,
+    required this.onTap,
+    this.description,
+  });
+
+  final String title;
+  final IconData icon;
+  final String? description;
+  final VoidCallback onTap;
 }
