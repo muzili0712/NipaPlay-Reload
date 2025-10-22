@@ -79,6 +79,7 @@ class _LiquidMediaLibraryPageState extends State<LiquidMediaLibraryPage> {
     );
 
     final double sectionSpacing = isPhone ? 20 : 28;
+    final double footerSpacing = isPhone ? 80 : 120;
 
     final slivers = <Widget>[
       SliverToBoxAdapter(
@@ -102,7 +103,7 @@ class _LiquidMediaLibraryPageState extends State<LiquidMediaLibraryPage> {
                 subtitleSpacing: 8,
               ),
               SizedBox(height: sectionSpacing),
-              _buildHostSectionCard(provider),
+              _buildHostSection(provider),
             ],
           ),
         ),
@@ -130,29 +131,6 @@ class _LiquidMediaLibraryPageState extends State<LiquidMediaLibraryPage> {
       );
     }
 
-    if (!hasHosts) {
-      slivers.add(
-        SliverFillRemaining(
-          hasScrollBody: false,
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(
-              pagePadding.left,
-              sectionSpacing,
-              pagePadding.right,
-              pagePadding.bottom,
-            ),
-            child: buildLiquidSectionCard(
-              context: context,
-              brightnessOverride: _brightness,
-              padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
-              child: _buildEmptyHostsPlaceholder(),
-            ),
-          ),
-        ),
-      );
-      return slivers;
-    }
-
     if (provider.isLoading && animeSummaries.isEmpty) {
       slivers.add(
         SliverFillRemaining(
@@ -168,13 +146,15 @@ class _LiquidMediaLibraryPageState extends State<LiquidMediaLibraryPage> {
           ),
         ),
       );
+      slivers.add(
+        SliverToBoxAdapter(child: SizedBox(height: footerSpacing)),
+      );
       return slivers;
     }
 
     if (animeSummaries.isEmpty) {
       slivers.add(
-        SliverFillRemaining(
-          hasScrollBody: false,
+        SliverToBoxAdapter(
           child: Padding(
             padding: EdgeInsets.fromLTRB(
               pagePadding.left,
@@ -182,14 +162,21 @@ class _LiquidMediaLibraryPageState extends State<LiquidMediaLibraryPage> {
               pagePadding.right,
               pagePadding.bottom,
             ),
-            child: buildLiquidSectionCard(
-              context: context,
-              brightnessOverride: _brightness,
-              padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
-              child: _buildEmptyLibraryPlaceholder(provider.activeHost),
+            child: _buildHostListRow(
+              icon: CupertinoIcons.info,
+              iconColor: _secondaryTextColor,
+              text:
+                  provider.activeHost == null ? '请选择一个共享客户端' : '该共享客户端暂无已同步番剧',
+              textColor: _secondaryTextColor,
+              onTap: provider.activeHost == null
+                  ? () => _showHostDialog(provider)
+                  : null,
             ),
           ),
         ),
+      );
+      slivers.add(
+        SliverToBoxAdapter(child: SizedBox(height: footerSpacing)),
       );
       return slivers;
     }
@@ -213,146 +200,108 @@ class _LiquidMediaLibraryPageState extends State<LiquidMediaLibraryPage> {
       ),
     );
 
+    slivers.add(
+      SliverToBoxAdapter(child: SizedBox(height: footerSpacing)),
+    );
+
     return slivers;
   }
 
-  Widget _buildHostSectionCard(SharedRemoteLibraryProvider provider) {
-    return buildLiquidSectionCard(
-      context: context,
-      brightnessOverride: _brightness,
-      padding: const EdgeInsets.all(24),
-      child: _buildHostSectionContent(provider),
+  Widget _buildHostSection(SharedRemoteLibraryProvider provider) {
+    final hosts = provider.hosts;
+    final bool hasHosts = hosts.isNotEmpty;
+    final bool isLoading = provider.isLoading;
+    final String? activeHostId = provider.activeHostId;
+    final bool canRefresh = provider.activeHost != null;
+
+    final rows = <Widget>[];
+
+    if (hasHosts) {
+      for (final host in hosts) {
+        final bool isActive = host.id == activeHostId;
+        final bool isOnline = host.isOnline;
+        final icon =
+            isOnline ? CupertinoIcons.cloud_fill : CupertinoIcons.cloud;
+        final iconColor = isOnline ? _accentColor : _secondaryTextColor;
+
+        final statusParts = <String>[];
+        statusParts.add(isOnline ? '在线' : '离线');
+        if (isActive) {
+          statusParts.add('当前使用');
+        }
+
+        final label = statusParts.isEmpty
+            ? host.displayName
+            : '${host.displayName} · ${statusParts.join(' · ')}';
+
+        rows.add(
+          _buildHostListRow(
+            icon: icon,
+            iconColor: iconColor,
+            text: label,
+            highlight: isActive,
+            textColor: isOnline ? _primaryTextColor : _secondaryTextColor,
+            onTap: isActive
+                ? null
+                : () {
+                    provider.setActiveHost(host.id);
+                  },
+          ),
+        );
+      }
+    } else {
+      rows.add(
+        _buildHostListRow(
+          icon: CupertinoIcons.cloud,
+          iconColor: _secondaryTextColor,
+          text: '尚未添加任何共享客户端',
+          textColor: _secondaryTextColor,
+          onTap: () => _showAddHostDialog(provider),
+        ),
+      );
+    }
+
+    if (hasHosts) {
+      rows.add(
+        _buildHostListRow(
+          icon: CupertinoIcons.square_list,
+          iconColor: _secondaryTextColor,
+          text: '选择或管理共享客户端',
+          onTap: () => _showHostDialog(provider),
+        ),
+      );
+    }
+
+    final bool refreshEnabled = !isLoading && canRefresh;
+    rows.add(
+      _buildHostListRow(
+        icon: isLoading ? CupertinoIcons.time : CupertinoIcons.arrow_clockwise,
+        iconColor: refreshEnabled ? _accentColor : _secondaryTextColor,
+        text: isLoading ? '正在刷新媒体库…' : '刷新媒体库',
+        textColor: refreshEnabled ? null : _secondaryTextColor,
+        onTap: refreshEnabled
+            ? () => _refreshLibrary(provider, userInitiated: true)
+            : null,
+      ),
     );
-  }
 
-  Widget _buildHostSectionContent(SharedRemoteLibraryProvider provider) {
-    final host = provider.activeHost;
-    final isLoading = provider.isLoading;
-
-    if (provider.hosts.isEmpty) {
-      return _buildEmptyCardContent(
-        icon: CupertinoIcons.cloud,
-        title: '尚未添加共享客户端',
-        description: '添加并连接一台安装了 NipaPlay 客户端的设备，\n即可在任意地方访问其中的番剧。',
-        primaryLabel: '添加客户端',
-        onPrimaryPressed: () => _showHostDialog(provider),
-      );
-    }
-
-    if (host == null) {
-      return _buildEmptyCardContent(
-        icon: CupertinoIcons.link,
-        title: '请选择一个共享客户端',
-        description: '当前有可用客户端，但尚未选择活跃连接。',
-        primaryLabel: '选择客户端',
-        secondaryLabel: '添加新的客户端',
-        onPrimaryPressed: () => _showHostDialog(provider),
-        onSecondaryPressed: () => _showAddHostDialog(provider),
-      );
-    }
-
-    final statusIcon = provider.hasReachableActiveHost
-        ? CupertinoIcons.cloud
-        : CupertinoIcons.exclamationmark_triangle;
+    rows.add(
+      _buildHostListRow(
+        icon: CupertinoIcons.add,
+        iconColor: _accentColor,
+        text: hasHosts ? '添加新的共享客户端' : '添加共享客户端',
+        onTap: () => _showAddHostDialog(provider),
+      ),
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: _accentBadgeBackground,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(statusIcon, color: _accentColor, size: 18),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    host.displayName,
-                    style: TextStyle(
-                      color: _primaryTextColor,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    host.baseUrl,
-                    style: TextStyle(
-                      color: _secondaryTextColor,
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            _buildFilledActionButton(
-              icon: CupertinoIcons.arrow_right_arrow_left,
-              label: '切换',
-              onPressed: () => _showHostDialog(provider),
-              compact: true,
-            ),
-          ],
-        ),
-        if (isLoading)
-          Padding(
-            padding: const EdgeInsets.only(top: 16),
-            child: Row(
-              children: [
-                CupertinoActivityIndicator(color: _accentColor),
-                const SizedBox(width: 8),
-                Text(
-                  '正在刷新…',
-                  style: TextStyle(
-                    color: _secondaryTextColor,
-                    fontSize: 13,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        const SizedBox(height: 20),
-        Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: [
-            _buildFilledActionButton(
-              icon: CupertinoIcons.refresh,
-              label: '刷新库',
-              onPressed: isLoading
-                  ? null
-                  : () => _refreshLibrary(provider, userInitiated: true),
-            ),
-            _buildOutlinedActionButton(
-              icon: CupertinoIcons.add,
-              label: '添加新客户端',
-              onPressed: () => _showAddHostDialog(provider),
-            ),
-          ],
-        ),
+        for (var i = 0; i < rows.length; i++) ...[
+          rows[i],
+          if (i != rows.length - 1) const SizedBox(height: 14),
+        ]
       ],
-    );
-  }
-
-  Widget _buildEmptyHostsPlaceholder() {
-    return _buildStatusMessage(
-      icon: CupertinoIcons.cloud,
-      message: '没有可用的共享客户端\n请先添加并连接一台设备',
-    );
-  }
-
-  Widget _buildEmptyLibraryPlaceholder(SharedRemoteHost? host) {
-    final description =
-        host == null ? '请选择一个共享客户端' : '客户端 “${host.displayName}” 尚未扫描任何番剧';
-    return _buildStatusMessage(
-      icon: CupertinoIcons.folder_open,
-      message: description,
     );
   }
 
@@ -522,67 +471,57 @@ class _LiquidMediaLibraryPageState extends State<LiquidMediaLibraryPage> {
     );
   }
 
-  Widget _buildEmptyCardContent({
+  Widget _buildHostListRow({
     required IconData icon,
-    required String title,
-    required String description,
-    required String primaryLabel,
-    VoidCallback? onPrimaryPressed,
-    String? secondaryLabel,
-    VoidCallback? onSecondaryPressed,
-    bool centerContent = false,
+    required String text,
+    Color? iconColor,
+    Color? textColor,
+    VoidCallback? onTap,
+    bool highlight = false,
   }) {
-    final actions = <Widget>[
-      _buildFilledActionButton(
-        icon: CupertinoIcons.add,
-        label: primaryLabel,
-        onPressed: onPrimaryPressed,
-      ),
-    ];
+    final resolvedIconColor =
+        iconColor ?? (highlight ? _accentColor : _secondaryTextColor);
+    final resolvedTextColor =
+        textColor ?? (highlight ? _accentColor : _primaryTextColor);
 
-    if (secondaryLabel != null) {
-      actions.add(
-        _buildOutlinedActionButton(
-          icon: CupertinoIcons.add_circled,
-          label: secondaryLabel,
-          onPressed: onSecondaryPressed,
-        ),
-      );
-    }
-
-    final content = Column(
-      crossAxisAlignment:
-          centerContent ? CrossAxisAlignment.center : CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, color: _secondaryTextColor, size: 36),
-        const SizedBox(height: 14),
-        Text(
-          title,
-          textAlign: centerContent ? TextAlign.center : TextAlign.left,
-          style: TextStyle(
-            color: _primaryTextColor,
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
+    final row = buildLiquidSectionCard(
+      context: context,
+      brightnessOverride: _brightness,
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+      borderRadius: 18,
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            color: resolvedIconColor,
+            size: 18,
           ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          description,
-          textAlign: centerContent ? TextAlign.center : TextAlign.left,
-          style: TextStyle(color: _secondaryTextColor, fontSize: 13),
-        ),
-        const SizedBox(height: 20),
-        Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          alignment: centerContent ? WrapAlignment.center : WrapAlignment.start,
-          children: actions,
-        ),
-      ],
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              text,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: resolvedTextColor,
+                fontSize: 14,
+                fontWeight: highlight ? FontWeight.w600 : FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
 
-    return centerContent ? Center(child: content) : content;
+    if (onTap == null) {
+      return row;
+    }
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: row,
+    );
   }
 
   Widget _buildStatusMessage(
