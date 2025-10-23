@@ -3,7 +3,7 @@ import 'package:flutter/cupertino.dart';
 
 /// 通用的 Cupertino 风格上拉菜单容器
 /// 提供标准的上拉菜单外观和行为，内容完全可自定义
-class CupertinoBottomSheet extends StatelessWidget {
+class CupertinoBottomSheet extends StatefulWidget {
   /// 菜单标题（可选）
   final String? title;
 
@@ -46,89 +46,195 @@ class CupertinoBottomSheet extends StatelessWidget {
       context: context,
       builder: (BuildContext context) => CupertinoBottomSheet(
         title: title,
+        child: child,
         heightRatio: heightRatio,
         showCloseButton: showCloseButton,
         onClose: onClose,
         floatingTitle: floatingTitle,
-        child: child,
       ),
     );
   }
 
   @override
-  Widget build(BuildContext context) {
-    final screenHeight = MediaQuery.of(context).size.height;
-    final double effectiveHeightRatio = heightRatio.clamp(0.0, 1.0).toDouble();
-    final double maxHeight = screenHeight * effectiveHeightRatio;
-    final hasTitle = title != null && title!.isNotEmpty;
-    final bool displayHeader = hasTitle && !floatingTitle;
+  State<CupertinoBottomSheet> createState() => _CupertinoBottomSheetState();
+}
 
-    final Widget content;
+class _CupertinoBottomSheetState extends State<CupertinoBottomSheet> {
+  double _scrollOffset = 0;
+
+  bool get _hasTitle => widget.title != null && widget.title!.isNotEmpty;
+
+  bool get _useFloatingTitle => widget.floatingTitle && _hasTitle;
+
+  double get _floatingTitleOpacity =>
+      (1.0 - (_scrollOffset / _floatingTitleFadeDistance)).clamp(0.0, 1.0);
+
+  bool _handleScrollNotification(ScrollNotification notification) {
+    if (!_useFloatingTitle) {
+      return false;
+    }
+
+    if (notification.metrics.axis != Axis.vertical) {
+      return false;
+    }
+
+    final double pixels =
+        notification.metrics.pixels.clamp(0.0, double.infinity).toDouble();
+    if ((pixels - _scrollOffset).abs() < 0.5) {
+      return false;
+    }
+
+    setState(() {
+      _scrollOffset = pixels;
+    });
+    return false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final double screenHeight = MediaQuery.of(context).size.height;
+    final double effectiveHeightRatio =
+        widget.heightRatio.clamp(0.0, 1.0).toDouble();
+    final double maxHeight = screenHeight * effectiveHeightRatio;
+    final bool displayHeader = _hasTitle && !widget.floatingTitle;
+
+    Widget content = widget.child;
     if (displayHeader) {
       content = Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _buildHeader(context),
-          Expanded(child: child),
+          Expanded(child: widget.child),
         ],
       );
     } else {
-      content = child;
+      final double topPadding = _calculateContentTopPadding(displayHeader);
+      Widget paddedChild = Padding(
+        padding: EdgeInsets.only(top: topPadding),
+        child: widget.child,
+      );
+
+      if (_useFloatingTitle) {
+        paddedChild = NotificationListener<ScrollNotification>(
+          onNotification: _handleScrollNotification,
+          child: paddedChild,
+        );
+      }
+
+      content = paddedChild;
     }
 
-    final double contentTopInset = displayHeader
-        ? 0
-        : floatingTitle
-            ? (showCloseButton
-                ? _floatingContentTopInsetWithClose
-                : _floatingContentTopInset)
-            : (showCloseButton ? _contentTopInsetWithClose : 0);
-    final double contentTopSpacing =
-        !displayHeader && floatingTitle ? _floatingContentTopSpacing : 0;
+    final Color backgroundColor = CupertinoDynamicColor.resolve(
+      CupertinoColors.systemGroupedBackground,
+      context,
+    );
 
-    return CupertinoBottomSheetScope(
-      contentTopInset: contentTopInset,
-      contentTopSpacing: contentTopSpacing,
-      child: Align(
-        alignment: Alignment.bottomCenter,
-        child: ClipRRect(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          child: Container(
-            height: maxHeight,
-            color: CupertinoDynamicColor.resolve(
-              CupertinoColors.systemGroupedBackground,
-              context,
-            ),
-            child: SafeArea(
-              top: false,
-              child: Stack(
-                children: [
-                  Positioned.fill(child: content),
-                  if (showCloseButton)
-                    Positioned(
-                      top: _closeButtonPadding,
-                      right: _closeButtonPadding,
-                      child: _buildCloseButton(context),
-                    ),
-                ],
+    final List<Widget> stackChildren = [
+      Positioned.fill(child: content),
+    ];
+
+    if (_useFloatingTitle) {
+      stackChildren
+        ..add(
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: IgnorePointer(
+              child: Container(
+                height: _floatingTitleGradientHeight,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      backgroundColor.withOpacity(0.9),
+                      backgroundColor.withOpacity(0.0),
+                    ],
+                    stops: const [0.0, 1.0],
+                  ),
+                ),
               ),
             ),
+          ),
+        )
+        ..add(
+          Positioned(
+            top: _floatingTitleTop,
+            left: _floatingTitleHorizontalPadding,
+            right: widget.showCloseButton
+                ? _floatingTitleRightPaddingWithClose
+                : _floatingTitleHorizontalPadding,
+            child: IgnorePointer(
+              child: Opacity(
+                opacity: _floatingTitleOpacity,
+                child: Text(
+                  widget.title!,
+                  style: CupertinoTheme.of(context)
+                      .textTheme
+                      .navTitleTextStyle
+                      .copyWith(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+              ),
+            ),
+          ),
+        );
+    }
+
+    if (widget.showCloseButton) {
+      stackChildren.add(
+        Positioned(
+          top: _closeButtonPadding,
+          right: _closeButtonPadding,
+          child: _buildCloseButton(context),
+        ),
+      );
+    }
+
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: ClipRRect(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        child: Container(
+          height: maxHeight,
+          color: backgroundColor,
+          child: SafeArea(
+            top: false,
+            child: Stack(children: stackChildren),
           ),
         ),
       ),
     );
   }
 
+  double _calculateContentTopPadding(bool displayHeader) {
+    if (displayHeader) {
+      return 0;
+    }
+    if (_useFloatingTitle) {
+      return widget.showCloseButton
+          ? _floatingTitleContentPaddingWithClose
+          : _floatingTitleContentPadding;
+    }
+    if (widget.showCloseButton) {
+      return _contentPaddingWithClose;
+    }
+    return 0;
+  }
+
   Widget _buildHeader(BuildContext context) {
     return Padding(
       padding: EdgeInsets.fromLTRB(
-        20,
-        showCloseButton ? 36 : 28,
-        showCloseButton ? 68 : 20,
+        _headerHorizontalPadding,
+        widget.showCloseButton ? 36 : 28,
+        widget.showCloseButton ? _floatingTitleRightPaddingWithClose : 20,
         8,
       ),
       child: Text(
-        title!,
+        widget.title!,
         style: CupertinoTheme.of(context).textTheme.navTitleTextStyle.copyWith(
               fontSize: 16,
               fontWeight: FontWeight.w600,
@@ -142,7 +248,7 @@ class CupertinoBottomSheet extends StatelessWidget {
       width: _closeButtonSize,
       height: _closeButtonSize,
       child: IOS26Button.child(
-        onPressed: onClose ?? () => Navigator.of(context).pop(),
+        onPressed: widget.onClose ?? () => Navigator.of(context).pop(),
         style: IOS26ButtonStyle.glass,
         size: IOS26ButtonSize.large,
         child: Icon(
@@ -159,31 +265,13 @@ class CupertinoBottomSheet extends StatelessWidget {
 
   static const double _closeButtonPadding = 12;
   static const double _closeButtonSize = 36;
-  static const double _floatingContentTopInsetWithClose = 44;
-  static const double _floatingContentTopInset = 28;
-  static const double _contentTopInsetWithClose = 28;
-  static const double _floatingContentTopSpacing = 8;
-}
-
-class CupertinoBottomSheetScope extends InheritedWidget {
-  final double contentTopInset;
-  final double contentTopSpacing;
-
-  const CupertinoBottomSheetScope({
-    required this.contentTopInset,
-    required this.contentTopSpacing,
-    required super.child,
-    super.key,
-  });
-
-  static CupertinoBottomSheetScope? maybeOf(BuildContext context) {
-    return context
-        .dependOnInheritedWidgetOfExactType<CupertinoBottomSheetScope>();
-  }
-
-  @override
-  bool updateShouldNotify(covariant CupertinoBottomSheetScope oldWidget) {
-    return contentTopInset != oldWidget.contentTopInset ||
-        contentTopSpacing != oldWidget.contentTopSpacing;
-  }
+  static const double _floatingTitleFadeDistance = 24;
+  static const double _floatingTitleContentPaddingWithClose = 0;
+  static const double _floatingTitleContentPadding = 0;
+  static const double _contentPaddingWithClose = 0;
+  static const double _floatingTitleGradientHeight = 0;
+  static const double _floatingTitleTop = 16;
+  static const double _floatingTitleHorizontalPadding = 20;
+  static const double _floatingTitleRightPaddingWithClose = 68;
+  static const double _headerHorizontalPadding = 20;
 }
