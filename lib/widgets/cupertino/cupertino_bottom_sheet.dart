@@ -133,6 +133,10 @@ class _CupertinoBottomSheetState extends State<CupertinoBottomSheet> {
       Positioned.fill(child: content),
     ];
 
+    final double gradientHeight = _useFloatingTitle
+        ? _topOverlayReservedHeight() + _floatingTitleGradientExtra
+        : 0;
+
     if (_useFloatingTitle) {
       stackChildren
         ..add(
@@ -142,13 +146,13 @@ class _CupertinoBottomSheetState extends State<CupertinoBottomSheet> {
             right: 0,
             child: IgnorePointer(
               child: Container(
-                height: _floatingTitleGradientHeight,
+                height: gradientHeight,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      backgroundColor.withOpacity(0.9),
+                      backgroundColor,
                       backgroundColor.withOpacity(0.0),
                     ],
                     stops: const [0.0, 1.0],
@@ -214,15 +218,14 @@ class _CupertinoBottomSheetState extends State<CupertinoBottomSheet> {
     if (displayHeader) {
       return 0;
     }
-    if (_useFloatingTitle) {
-      return widget.showCloseButton
-          ? _floatingTitleContentPaddingWithClose
-          : _floatingTitleContentPadding;
-    }
-    if (widget.showCloseButton) {
-      return _contentPaddingWithClose;
-    }
     return 0;
+  }
+
+  double _topOverlayReservedHeight() {
+    if (!widget.showCloseButton) {
+      return 0;
+    }
+    return _closeButtonPadding + _closeButtonSize;
   }
 
   Widget _buildHeader(BuildContext context) {
@@ -266,10 +269,7 @@ class _CupertinoBottomSheetState extends State<CupertinoBottomSheet> {
   static const double _closeButtonPadding = 12;
   static const double _closeButtonSize = 36;
   static const double _floatingTitleFadeDistance = 24;
-  static const double _floatingTitleContentPaddingWithClose = 0;
-  static const double _floatingTitleContentPadding = 0;
-  static const double _contentPaddingWithClose = 0;
-  static const double _floatingTitleGradientHeight = 0;
+  static const double _floatingTitleGradientExtra = 40;
   static const double _floatingTitleTop = 16;
   static const double _floatingTitleHorizontalPadding = 20;
   static const double _floatingTitleRightPaddingWithClose = 68;
